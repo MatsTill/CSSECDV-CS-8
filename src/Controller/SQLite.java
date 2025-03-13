@@ -7,6 +7,7 @@ import Model.User;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -316,5 +317,51 @@ public class SQLite {
             System.out.print(ex);
         }
         return product;
+    }
+
+    public AuthStatus authenticate(String username, char[] password) {
+        String passwordStr = new String(password);
+
+
+        // Prepared Statement
+        String sql = "SELECT id, username, password, role, locked FROM users WHERE username = ?";
+
+        try (Connection conn = DriverManager.getConnection(driverURL);
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1,username);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    
+                    // Locked Account check
+                    int locked = rs.getInt("locked");
+                    if (locked == 1) {
+                        System.out.println("Account is locked: " + username);
+                        return AuthStatus.ACCOUNT_LOCKED;
+                    }
+
+                    // Password check
+                    // NO HASHING YET GOES HERE WHEN IMPLEMENTING HASHING
+                    String storedPassword = rs.getString("password");
+                    if (storedPassword.equals(passwordStr)) {
+                        return AuthStatus.SUCCESS;
+                    } else {
+                        return AuthStatus.INVALID_CREDENTIALS;
+                    } 
+
+                } else {
+
+                    // No user found
+                    return AuthStatus.INVALID_CREDENTIALS;
+                }
+            }
+            
+        } catch (Exception ex) {
+            System.out.print(ex);
+            return AuthStatus.SYSTEM_ERROR;
+        } finally {
+            // Clear shit
+            java.util.Arrays.fill(password, '0');
+        }
     }
 }
