@@ -97,7 +97,11 @@ public class Register extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void registerBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_registerBtnActionPerformed
-        frame.registerAction(usernameFld.getText(), passwordFld.getPassword(), confpassFld.getPassword());
+        String username = usernameFld.getText();
+        char[] password = passwordFld.getPassword();
+        char[] confpass = confpassFld.getPassword();
+       
+        frame.registerAction(username, password, confpass);
         frame.loginNav();
     }//GEN-LAST:event_registerBtnActionPerformed
 

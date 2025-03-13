@@ -260,7 +260,7 @@ public class Frame extends javax.swing.JFrame {
         String passwordStr = new String(password);
         String confpassStr = new String(confpass);
 
-        main.sqlite.addUser(username, password);
+        main.sqlite.addUser(username, passwordStr);
 
         // for clearing out memory
         java.util.Arrays.fill(password, '0');
