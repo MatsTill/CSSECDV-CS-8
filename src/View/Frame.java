@@ -256,8 +256,15 @@ public class Frame extends javax.swing.JFrame {
         frameView.show(Container, "registerPnl");
     }
     
-    public void registerAction(String username, String password, String confpass){
+    public void registerAction(String username, char[] password, char[] confpass){
+        String passwordStr = new String(password);
+        String confpassStr = new String(confpass);
+
         main.sqlite.addUser(username, password);
+
+        // for clearing out memory
+        java.util.Arrays.fill(password, '0');
+        java.util.Arrays.fill(confpass, '0');
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
