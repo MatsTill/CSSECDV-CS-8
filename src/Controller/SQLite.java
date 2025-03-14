@@ -9,8 +9,13 @@ import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.Base64;
 
 public class SQLite {
     
@@ -27,6 +32,7 @@ public class SQLite {
             System.out.print(ex);
         }
     }
+    
     
     public void createHistoryTable() {
         String sql = "CREATE TABLE IF NOT EXISTS history (\n"
@@ -86,6 +92,7 @@ public class SQLite {
             + " id INTEGER PRIMARY KEY AUTOINCREMENT,\n"
             + " username TEXT NOT NULL UNIQUE,\n"
             + " password TEXT NOT NULL,\n"
+            + " salt TEXT NOT NULL, \n"
             + " role INTEGER DEFAULT 2,\n"
             + " locked INTEGER DEFAULT 0\n"
             + ");";
@@ -180,25 +187,6 @@ public class SQLite {
         }
     }
     
-    public void addUser(String username, String password) {
-        String sql = "INSERT INTO users(username,password) VALUES('" + username + "','" + password + "')";
-        
-        try (Connection conn = DriverManager.getConnection(driverURL);
-            Statement stmt = conn.createStatement()){
-            stmt.execute(sql);
-            
-//      PREPARED STATEMENT EXAMPLE
-//      String sql = "INSERT INTO users(username,password) VALUES(?,?)";
-//      PreparedStatement pstmt = conn.prepareStatement(sql)) {
-//      pstmt.setString(1, username);
-//      pstmt.setString(2, password);
-//      pstmt.executeUpdate();
-        } catch (Exception ex) {
-            System.out.print(ex);
-        }
-    }
-    
-    
     public ArrayList<History> getHistory(){
         String sql = "SELECT id, username, name, stock, timestamp FROM history";
         ArrayList<History> histories = new ArrayList<History>();
@@ -281,14 +269,14 @@ public class SQLite {
     }
     
     public void addUser(String username, String password, int role) {
-        String sql = "INSERT INTO users(username,password,role) VALUES('" + username + "','" + password + "','" + role + "')";
-        
-        try (Connection conn = DriverManager.getConnection(driverURL);
-            Statement stmt = conn.createStatement()){
+        String salt = generateSalt();
+        String hashedPassword = hashPassword(password, salt);
+        String sql = "INSERT INTO users(username, password, salt, role) VALUES('" + username + "', '" + hashedPassword + "', '" + salt + "', " + role + ")";
+        try (Connection conn = this.connect();
+             Statement stmt = conn.createStatement()) {
             stmt.execute(sql);
-            
-        } catch (Exception ex) {
-            System.out.print(ex);
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
         }
     }
     
@@ -322,9 +310,8 @@ public class SQLite {
     public AuthStatus authenticate(String username, char[] password) {
         String passwordStr = new String(password);
 
-
         // Prepared Statement
-        String sql = "SELECT id, username, password, role, locked FROM users WHERE username = ?";
+        String sql = "SELECT id, username, password, salt, role, locked FROM users WHERE username = ?";
 
         try (Connection conn = DriverManager.getConnection(driverURL);
             PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -343,14 +330,16 @@ public class SQLite {
                     // Password check
                     // NO HASHING YET GOES HERE WHEN IMPLEMENTING HASHING
                     String storedPassword = rs.getString("password");
-                    if (storedPassword.equals(passwordStr)) {
+                    String salt = rs.getString("salt");     
+                    String hashedPassword = hashPassword(passwordStr, salt);
+
+                    if (storedPassword.equals(hashedPassword)) {
                         return AuthStatus.SUCCESS;
                     } else {
                         return AuthStatus.INVALID_CREDENTIALS;
                     } 
 
                 } else {
-
                     // No user found
                     return AuthStatus.INVALID_CREDENTIALS;
                 }
@@ -364,4 +353,35 @@ public class SQLite {
             java.util.Arrays.fill(password, '0');
         }
     }
+
+    private String generateSalt() {
+        SecureRandom random = new SecureRandom();
+        byte[] salt = new byte[16];
+        random.nextBytes(salt);
+        return Base64.getEncoder().encodeToString(salt);
+    }
+
+    private String hashPassword(String password, String salt) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            md.update(salt.getBytes());
+            byte[] hashedPassword = md.digest(password.getBytes());
+            return Base64.getEncoder().encodeToString(hashedPassword);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    private Connection connect() {
+        // SQLite connection string
+        String url = "jdbc:sqlite:database.db";
+        Connection conn = null;
+        try {
+            conn = DriverManager.getConnection(url);
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return conn;
+    }
 }
+
