@@ -259,7 +259,6 @@ public class Frame extends javax.swing.JFrame {
     
     public void registerAction(String username, char[] password, char[] confpass){
         String passwordStr = new String(password);
-        String confpassStr = new String(confpass);
 
         main.sqlite.addUser(username, passwordStr);
 
