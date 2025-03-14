@@ -1,6 +1,8 @@
 
 package View;
 
+import Controller.AuthStatus;
+
 public class Login extends javax.swing.JPanel {
 
     public Frame frame;
@@ -15,7 +17,7 @@ public class Login extends javax.swing.JPanel {
 
         jLabel1 = new javax.swing.JLabel();
         usernameFld = new javax.swing.JTextField();
-        passwordFld = new javax.swing.JTextField();
+        passwordFld = new javax.swing.JPasswordField();
         registerBtn = new javax.swing.JButton();
         loginBtn = new javax.swing.JButton();
 
@@ -31,7 +33,7 @@ public class Login extends javax.swing.JPanel {
 
         passwordFld.setBackground(new java.awt.Color(240, 240, 240));
         passwordFld.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
-        passwordFld.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        passwordFld.setHorizontalAlignment(javax.swing.JPasswordField.CENTER);
         passwordFld.setBorder(javax.swing.BorderFactory.createTitledBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 2, true), "PASSWORD", javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Tahoma", 0, 12))); // NOI18N
 
         registerBtn.setFont(new java.awt.Font("Tahoma", 1, 24)); // NOI18N
@@ -83,18 +85,55 @@ public class Login extends javax.swing.JPanel {
         );
     }// </editor-fold>//GEN-END:initComponents
     private void loginBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loginBtnActionPerformed
-        frame.mainNav();
+        String username = usernameFld.getText();
+        char[] password = passwordFld.getPassword();
+
+        if (username.isEmpty()) {
+            showErrorMessage("Username is required");
+            return;
+        }
+
+        AuthStatus status = frame.loginAction(username, password);
+
+        switch (status) {
+            case SUCCESS:
+                frame.mainNav();
+                break;
+            case ACCOUNT_LOCKED:
+                showErrorMessage("This account is locked. Please contact an administrator.");
+                break;
+            case INVALID_CREDENTIALS:
+                showErrorMessage("Invalid username or password");
+                break;
+            case SYSTEM_ERROR:
+                showErrorMessage("An error occurred. Please try again later.");
+                break;
+        }
+        
+        // Clear passwords after failure
+        passwordFld.setText("");
+    
     }//GEN-LAST:event_loginBtnActionPerformed
 
     private void registerBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_registerBtnActionPerformed
         frame.registerNav();
     }//GEN-LAST:event_registerBtnActionPerformed
 
+    //
+    private void showErrorMessage(String message) {
+        javax.swing.JOptionPane.showMessageDialog(
+            this, 
+            message, 
+            "Login error", 
+            javax.swing.JOptionPane.ERROR_MESSAGE
+        );
+        
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel jLabel1;
     private javax.swing.JButton loginBtn;
-    private javax.swing.JTextField passwordFld;
+    private javax.swing.JPasswordField passwordFld;
     private javax.swing.JButton registerBtn;
     private javax.swing.JTextField usernameFld;
     // End of variables declaration//GEN-END:variables
