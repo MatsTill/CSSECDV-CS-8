@@ -1,6 +1,7 @@
 package View;
 
 import Controller.Main;
+import Controller.AuthStatus;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Dimension;
@@ -265,6 +266,10 @@ public class Frame extends javax.swing.JFrame {
         // for clearing out memory
         java.util.Arrays.fill(password, '0');
         java.util.Arrays.fill(confpass, '0');
+    }
+
+    public AuthStatus loginAction(String username, char[] password){
+        return main.sqlite.authenticate(username, password);
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
