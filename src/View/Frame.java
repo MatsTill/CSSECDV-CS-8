@@ -261,7 +261,7 @@ public class Frame extends javax.swing.JFrame {
         String passwordStr = new String(password);
         String confpassStr = new String(confpass);
 
-        main.sqlite.addUser(username, passwordStr);
+        main.sqlite.addUser(username, passwordStr, 0); // Assuming 0 as the default integer argument
 
         // for clearing out memory
         java.util.Arrays.fill(password, '0');
