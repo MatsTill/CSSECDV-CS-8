@@ -14,6 +14,7 @@ public class Login extends javax.swing.JPanel {
     public Login() {
         initComponents();
     }
+    
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -197,18 +198,31 @@ public class Login extends javax.swing.JPanel {
             showErrorMessage("Username is required");
             return;
         }
+        
+        SQLite sqlite = new SQLite();
+        if (sqlite.isAccountLocked(username)){
+            showErrorMessage("This account is locked. Please contact an administrator.");
+            return;
+        }
 
         AuthStatus status = frame.loginAction(username, password);
 
         switch (status) {
             case SUCCESS:
+                sqlite.unlockAccount(username);
                 frame.mainNav();
                 break;
             case ACCOUNT_LOCKED:
                 showErrorMessage("This account is locked. Please contact an administrator.");
                 break;
-            case INVALID_CREDENTIALS:
-                showErrorMessage("Invalid username or password");
+             case INVALID_CREDENTIALS:
+                sqlite.recordFailedAttempt(username);
+                if (sqlite.getFailedAttempts(username) >= 3) {
+                    sqlite.lockAccount(username);
+                    showErrorMessage("Too many failed attempts. Account is locked.");
+                } else {
+                    showErrorMessage("Invalid username or password");
+                }
                 break;
             case SYSTEM_ERROR:
                 showErrorMessage("An error occurred. Please try again later.");
@@ -284,6 +298,7 @@ public class Login extends javax.swing.JPanel {
         );
         
     }
+    
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton forgotPassBtn;

@@ -173,8 +173,10 @@ public class Register extends javax.swing.JPanel {
 
     private void showConfPassBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showConfPassBoxActionPerformed
         if (showConfPassBox.isSelected()) {
+            passwordFld.setEchoChar((char) 0);
             confpassFld.setEchoChar((char) 0);
         } else {
+            passwordFld.setEchoChar('•');
             confpassFld.setEchoChar('•');
         }
     }//GEN-LAST:event_showConfPassBoxActionPerformed
