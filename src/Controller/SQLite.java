@@ -33,7 +33,6 @@ public class SQLite {
         }
     }
     
-    
     public void createHistoryTable() {
         String sql = "CREATE TABLE IF NOT EXISTS history (\n"
             + " id INTEGER PRIMARY KEY AUTOINCREMENT,\n"
@@ -95,6 +94,9 @@ public class SQLite {
             + " salt TEXT NOT NULL, \n"
             + " role INTEGER DEFAULT 2,\n"
             + " locked INTEGER DEFAULT 0,\n"
+            + " failed_attempts INTEGER DEFAULT 0, \n"
+            + " lockout_time INTEGER DEFAULT 0, \n"
+            + " lockout_count INTEGER DEFAULT 0, \n"                
             + " security_answer1 TEXT,\n"
             + " security_answer2 TEXT\n"
             + ");";
@@ -412,6 +414,86 @@ public class SQLite {
         }
     }
     
+    public void recordFailedAttempt(String username){
+        String sql = "UPDATE users SET failed_attempts = failed_attempts + 1 WHERE username =?";
+        try (Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public void lockAccount(String username){
+        long lockoutTime = System.currentTimeMillis();;
+        String sql = "UPDATE users SET locked = 1, lockout_time = ?, lockout_count = lockout_count + 1 WHERE username =?";
+        try (Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setLong(1, lockoutTime);
+            pstmt.setString(2, username);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+    
+    public void unlockAccount(String username) {
+        String sql = "UPDATE users SET locked = 0, failed_attempts = 0, lockout_time = 0 WHERE username = ?";
+        try (Connection conn = this.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+    
+    public boolean isAccountLocked(String username) {
+        String sql = "SELECT locked, lockout_time, lockout_count FROM users WHERE username = ?";
+        try (Connection conn = this.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                int locked = rs.getInt("locked");
+                long lockoutTime = rs.getLong("lockout_time");
+                int lockoutCount = rs.getInt("lockout_count");
+
+                if (locked == 1) {
+                    long currentTime = System.currentTimeMillis();
+                    long lockoutDuration = 60000; // 1 minute lockout duration
+                    if (currentTime - lockoutTime > lockoutDuration) {
+                        unlockAccount(username);
+                        return false;
+                    } else if (lockoutCount >= 3) {
+                        return true; // Permanently locked
+                    }
+                    return true;
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return false;
+    }
+    
+    public int getFailedAttempts(String username) {
+        String sql = "SELECT failed_attempts FROM users WHERE username = ?";
+        try (Connection conn = this.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("failed_attempts");
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return 0;
+    }   
+    
+ 
     private Connection connect() {
         // SQLite connection string
         String url = "jdbc:sqlite:database.db";
