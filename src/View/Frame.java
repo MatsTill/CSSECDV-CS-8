@@ -257,10 +257,10 @@ public class Frame extends javax.swing.JFrame {
         frameView.show(Container, "registerPnl");
     }
     
-    public void registerAction(String username, char[] password, char[] confpass){
+    public void registerAction(String username, char[] password, char[] confpass, String ques1, String ques2){
         String passwordStr = new String(password);
 
-        main.sqlite.addUser(username, passwordStr, 0); // Assuming 0 as the default integer argument
+        main.sqlite.addUser(username, passwordStr, 0, ques1, ques2); // Assuming default values for the additional arguments
 
         // for clearing out memory
         java.util.Arrays.fill(password, '0');

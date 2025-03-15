@@ -54,11 +54,12 @@ public class Main {
 //        sqlite.addProduct("Scanner", 10, 100.0);
 
         // Add sample users with salt
-        sqlite.addUser("admin", "qwerty1234", 5);
-        sqlite.addUser("manager", "qwerty1234", 4);
-        sqlite.addUser("staff", "qwerty1234", 3);
-        sqlite.addUser("client1", "qwerty1234", 2);
-        sqlite.addUser("client2", "qwerty1234", 2);
+        sqlite.addUser("admin", "qwerty1234", 5, "Blue", "Smith");
+        sqlite.addUser("manager", "qwerty1234", 4, "Smith", "Buddy");
+        sqlite.addUser("staff", "qwerty1234", 3, "Buddy", "1984");
+        sqlite.addUser("client1", "qwerty1234", 2, "1984", "Inception");
+        sqlite.addUser("client2", "qwerty1234", 2, "Inception", "Blue");
+  
         
 //        
 //        // Get users

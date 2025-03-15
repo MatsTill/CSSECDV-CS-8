@@ -94,7 +94,9 @@ public class SQLite {
             + " password TEXT NOT NULL,\n"
             + " salt TEXT NOT NULL, \n"
             + " role INTEGER DEFAULT 2,\n"
-            + " locked INTEGER DEFAULT 0\n"
+            + " locked INTEGER DEFAULT 0,\n"
+            + " security_answer1 TEXT,\n"
+            + " security_answer2 TEXT\n"
             + ");";
 
         try (Connection conn = DriverManager.getConnection(driverURL);
@@ -268,13 +270,19 @@ public class SQLite {
         return users;
     }
     
-    public void addUser(String username, String password, int role) {
+    public void addUser(String username, String password, int role, String securityAnswer1, String securityAnswer2) {
         String salt = generateSalt();
         String hashedPassword = hashPassword(password, salt);
-        String sql = "INSERT INTO users(username, password, salt, role) VALUES('" + username + "', '" + hashedPassword + "', '" + salt + "', " + role + ")";
+        String sql = "INSERT INTO users(username, password, salt, role, security_answer1, security_answer2) VALUES(?, ?, ?, ?, ?, ?)";
         try (Connection conn = this.connect();
-             Statement stmt = conn.createStatement()) {
-            stmt.execute(sql);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            pstmt.setString(2, hashedPassword);
+            pstmt.setString(3, salt);
+            pstmt.setInt(4, role);
+            pstmt.setString(5, securityAnswer1);
+            pstmt.setString(6, securityAnswer2);
+            pstmt.executeUpdate();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
@@ -369,6 +377,38 @@ public class SQLite {
             return Base64.getEncoder().encodeToString(hashedPassword);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
+        }
+    }
+    
+    public boolean verifySecurityAnswers(String username, String answer1, String answer2) {
+        String sql = "SELECT security_answer1, security_answer2 FROM users WHERE username = ?";
+        try (Connection conn = this.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                String storedAnswer1 = rs.getString("security_answer1");
+                String storedAnswer2 = rs.getString("security_answer2");
+                return storedAnswer1.equals(answer1) && storedAnswer2.equals(answer2);
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return false;
+    }
+    
+    public void updatePassword(String username, String newPassword) {
+        String salt = generateSalt();
+        String hashedPassword = hashPassword(newPassword, salt);
+        String sql = "UPDATE users SET password = ?, salt = ? WHERE username = ?";
+        try (Connection conn = this.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, hashedPassword);
+            pstmt.setString(2, salt);
+            pstmt.setString(3, username);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
         }
     }
     
