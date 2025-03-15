@@ -141,6 +141,29 @@ public class Register extends javax.swing.JPanel {
             return;
         }
 
+        // Check username length
+        if (username.length() < 3) {
+            showErrorMessage("Username must be at least 3 characters long");
+            return;
+        }
+
+        if (username.length() > 30) {
+            showErrorMessage("Username too long (maximum 30 characters)");
+            return;
+        }
+
+        // Check for valid characters
+        if (!username.matches("^[a-zA-Z0-9_.-]+$")) {
+            showErrorMessage("Username can only contain letters, numbers, underscores, dots and hyphens");
+            return;
+        }
+
+        // Check username availability
+        if (frame.isUsernameTaken(username)) {
+            showErrorMessage("Username already exists. Please choose another username.");
+            return;
+        }
+
         // Password matching check
         if (!java.util.Arrays.equals(password, confpass)) {
             showErrorMessage("Passwords do not match");
@@ -164,10 +187,24 @@ public class Register extends javax.swing.JPanel {
         }
        
         frame.registerAction(username, password, confpass, ques1, ques2);
+
+        // Clear all sensitive data from fields for security
+        usernameFld.setText("");
+        passwordFld.setText("");
+        confpassFld.setText("");
+        securityQues1.setText("");
+        securityQues2.setText("");
+
         frame.loginNav();
     }//GEN-LAST:event_registerBtnActionPerformed
 
     private void backBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backBtnActionPerformed
+        usernameFld.setText("");
+        passwordFld.setText("");
+        confpassFld.setText("");
+        securityQues1.setText("");
+        securityQues2.setText("");
+        
         frame.loginNav();
     }//GEN-LAST:event_backBtnActionPerformed
 

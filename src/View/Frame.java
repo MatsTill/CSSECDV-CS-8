@@ -271,6 +271,11 @@ public class Frame extends javax.swing.JFrame {
         return main.sqlite.authenticate(username, password);
     }
 
+    public boolean isUsernameTaken(String username) {
+        // Check if username exists in database
+        return main.sqlite.checkUsernameExists(username);
+    }
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel Container;
     private javax.swing.JPanel Content;
