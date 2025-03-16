@@ -4,12 +4,12 @@ package Controller;
 import Model.History;
 import Model.Logs;
 import Model.Product;
+import Model.Role;
 import Model.User;
 import View.Frame;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
-
 
 
 public class Main {
@@ -53,11 +53,11 @@ public class Main {
 //        sqlite.addProduct("Firewall", 3, 1000.0);
 //        sqlite.addProduct("Scanner", 10, 100.0);
 
-        sqlite.addUser("admin", "qwerty1234", 5, "Blue", "SPCP");
-        sqlite.addUser("manager", "qwerty1234", 4, "Smith", "CSA");
-        sqlite.addUser("staff", "qwerty1234", 3, "Buddy", "LSM");
-        sqlite.addUser("client1", "qwerty1234", 2, "Tilly", "Don Bosco");
-        sqlite.addUser("client2", "qwerty1234", 2, "Angel", "DLSU");
+        sqlite.addUser("admin", "qwerty1234", Role.ADMIN, "Blue", "SPCP");
+        sqlite.addUser("manager", "qwerty1234", Role.MANAGER, "Smith", "CSA");
+        sqlite.addUser("staff", "qwerty1234", Role.STAFF, "Buddy", "LSM");
+        sqlite.addUser("client1", "qwerty1234", Role.CLIENT, "Tilly", "Don Bosco");
+        sqlite.addUser("client2", "qwerty1234", Role.CLIENT, "Angel", "DLSU");
         
 //        
 //        // Get users
@@ -97,10 +97,52 @@ public class Main {
 //            System.out.println(" Role: " + users.get(nCtr).getRole());
 //            System.out.println(" Locked: " + users.get(nCtr).getLocked());
 //        }
+
+
         
         // Initialize User Interface
         Frame frame = new Frame();
         frame.init(this);
+    }
+
+    public void purchaseProduct(User user, Product product) {
+        if (AuthorizeRole.canPurchase(user)) {
+            // Logic to purchase product
+        } else {
+            System.out.println("Access Denied: You do not have permission to purchase products.");
+        }
+    }
+
+    public void manageProducts(User user) {
+        if (AuthorizeRole.canManageProducts(user)) {
+            // Logic to manage products
+        } else {
+            System.out.println("Access Denied: You do not have permission to manage products.");
+        }
+    }
+
+    public void viewAllPurchaseHistory(User user) {
+        if (AuthorizeRole.canViewAllPurchaseHistory(user)) {
+            // Logic to view all purchase history
+        } else {
+            System.out.println("Access Denied: You do not have permission to view all purchase history.");
+        }
+    }
+
+    public void manageUsers(User user) {
+        if (AuthorizeRole.canManageUsers(user)) {
+            // Logic to manage users
+        } else {
+            System.out.println("Access Denied: You do not have permission to manage users.");
+        }
+    }
+
+    public void manageLogs(User user) {
+        if (AuthorizeRole.canManageLogs(user)) {
+            // Logic to manage logs
+        } else {
+            System.out.println("Access Denied: You do not have permission to manage logs.");
+        }
     }
     
 }
