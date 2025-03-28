@@ -156,7 +156,9 @@ public class SessionManager {
         try {
             File file = new File(username + "_" + SESSION_FILE);
             if (file.exists()) {
-                file.delete();
+                if (!file.delete()) {
+                    System.err.println("Failed to delete session file for user: " + username);
+                }
             }
         } catch (Exception e) {
             System.err.println("Error deleting session file: " + e.getMessage());
