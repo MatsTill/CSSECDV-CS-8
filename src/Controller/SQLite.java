@@ -98,7 +98,9 @@ public class SQLite {
             + " lockout_time INTEGER DEFAULT 0, \n"
             + " lockout_count INTEGER DEFAULT 0, \n"                
             + " security_answer1 TEXT,\n"
-            + " security_answer2 TEXT\n"
+            + " security_answer2 TEXT,\n"
+            + " session_id TEXT,\n"
+            + " session_expiry INTEGER DEFAULT 0\n"
             + ");";
 
         try (Connection conn = DriverManager.getConnection(driverURL);
@@ -254,7 +256,7 @@ public class SQLite {
     }
     
     public ArrayList<User> getUsers(){
-        String sql = "SELECT id, username, password, role, locked FROM users";
+        String sql = "SELECT id, username, password, role, locked, session_id, session_expiry FROM users";
         ArrayList<User> users = new ArrayList<User>();
         
         try (Connection conn = DriverManager.getConnection(driverURL);
@@ -262,13 +264,20 @@ public class SQLite {
             ResultSet rs = stmt.executeQuery(sql)){
             
             while (rs.next()) {
-                users.add(new User(rs.getInt("id"),
-                                   rs.getString("username"),
-                                   rs.getString("password"),
-                                   rs.getInt("role"),
-                                   rs.getInt("locked")));
+                users.add(new User(
+                    rs.getInt("id"),
+                    rs.getString("username"),
+                    rs.getString("password"),
+                    rs.getInt("role"),
+                    rs.getInt("locked"),
+                    rs.getString("session_id"),
+                    rs.getLong("session_expiry")
+                ));
             }
-        } catch (Exception ex) {}
+        } catch (Exception ex) {
+            System.out.print(ex);
+        }
+        
         return users;
     }
     
@@ -524,6 +533,102 @@ public class SQLite {
         }
         
         return false;
+    }
+
+    public User getUserByUsername(String username) {
+        String sql = "SELECT id, username, password, role, locked, session_id, session_expiry FROM users WHERE username = ?";
+        
+        try (Connection conn = DriverManager.getConnection(driverURL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, username);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return new User(
+                    rs.getInt("id"),
+                    rs.getString("username"),
+                    rs.getString("password"),
+                    rs.getInt("role"),
+                    rs.getInt("locked"),
+                    rs.getString("session_id"),
+                    rs.getLong("session_expiry")
+                );
+            }
+        } catch (Exception ex) {
+            System.out.print(ex);
+        }
+        
+        return null;
+    }
+
+    public User getUserBySessionId(String sessionId) {
+        String sql = "SELECT id, username, password, role, locked, session_id, session_expiry FROM users WHERE session_id = ?";
+        
+        try (Connection conn = DriverManager.getConnection(driverURL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, sessionId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return new User(
+                    rs.getInt("id"),
+                    rs.getString("username"),
+                    rs.getString("password"),
+                    rs.getInt("role"),
+                    rs.getInt("locked"),
+                    rs.getString("session_id"),
+                    rs.getLong("session_expiry")
+                );
+            }
+        } catch (Exception ex) {
+            System.out.print(ex);
+        }
+        
+        return null;
+    }
+
+    public void updateUserSession(User user) {
+        String sql = "UPDATE users SET session_id = ?, session_expiry = ? WHERE username = ?";
+        
+        try (Connection conn = DriverManager.getConnection(driverURL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, user.getSessionId());
+            pstmt.setLong(2, user.getSessionExpiry());
+            pstmt.setString(3, user.getUsername());
+            
+            pstmt.executeUpdate();
+        } catch (Exception ex) {
+            System.out.print(ex);
+        }
+    }
+
+    public void clearUserSession(String sessionId) {
+        String sql = "UPDATE users SET session_id = NULL, session_expiry = 0 WHERE session_id = ?";
+        
+        try (Connection conn = DriverManager.getConnection(driverURL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, sessionId);
+            pstmt.executeUpdate();
+        } catch (Exception ex) {
+            System.out.print(ex);
+        }
+    }
+
+    public void clearUserSessionsByUsername(String username) {
+        String sql = "UPDATE users SET session_id = NULL, session_expiry = 0 WHERE username = ?";
+        
+        try (Connection conn = DriverManager.getConnection(driverURL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, username);
+            pstmt.executeUpdate();
+        } catch (Exception ex) {
+            System.out.print(ex);
+        }
     }
 }
 

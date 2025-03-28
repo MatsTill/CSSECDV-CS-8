@@ -6,6 +6,8 @@ public class User {
     private String password;
     private int role = 2;
     private int locked = 0;
+    private String sessionId;
+    private long sessionExpiry;
 
     public User(String username, String password){
         this.username = username;
@@ -18,6 +20,16 @@ public class User {
         this.password = password;
         this.role = role;
         this.locked = locked;
+    }
+    
+    public User(int id, String username, String password, int role, int locked, String sessionId, long sessionExpiry){
+        this.id = id;
+        this.username = username;
+        this.password = password;
+        this.role = role;
+        this.locked = locked;
+        this.sessionId = sessionId;
+        this.sessionExpiry = sessionExpiry;
     }
     
     public int getId() {
@@ -58,5 +70,25 @@ public class User {
 
     public void setLocked(int locked) {
         this.locked = locked;
+    }
+    
+    public String getSessionId() {
+        return sessionId;
+    }
+    
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
+    }
+    
+    public long getSessionExpiry() {
+        return sessionExpiry;
+    }
+    
+    public void setSessionExpiry(long sessionExpiry) {
+        this.sessionExpiry = sessionExpiry;
+    }
+    
+    public boolean isSessionValid() {
+        return sessionId != null && sessionExpiry > System.currentTimeMillis();
     }
 }
