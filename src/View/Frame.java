@@ -2,6 +2,7 @@ package View;
 
 import Controller.Main;
 import Controller.AuthStatus;
+import Model.User;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Dimension;
@@ -201,6 +202,7 @@ public class Frame extends javax.swing.JFrame {
     }//GEN-LAST:event_clientBtnActionPerformed
 
     private void logoutBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutBtnActionPerformed
+        main.logout();
         frameView.show(Container, "loginPnl");
     }//GEN-LAST:event_logoutBtnActionPerformed
 
@@ -246,7 +248,36 @@ public class Frame extends javax.swing.JFrame {
     }
     
     public void mainNav(){
+        if (!main.isUserAuthenticated()) {
+            frameView.show(Container, "loginPnl");
+            return;
+        }
+        
+        User user = main.getCurrentUser();
+        int role = user.getRole();
+        
+        // Show appropriate UI elements based on role
+        adminBtn.setVisible(role >= 5);
+        managerBtn.setVisible(role >= 4);
+        staffBtn.setVisible(role >= 3);
+        clientBtn.setVisible(role >= 2);
+        
         frameView.show(Container, "homePnl");
+        
+        // Direct to appropriate home panel based on role
+        if (role >= 5) {
+            adminHomePnl.showPnl("home");
+            contentView.show(Content, "adminHomePnl");
+        } else if (role >= 4) {
+            managerHomePnl.showPnl("home");
+            contentView.show(Content, "managerHomePnl");
+        } else if (role >= 3) {
+            staffHomePnl.showPnl("home");
+            contentView.show(Content, "staffHomePnl");
+        } else {
+            clientHomePnl.showPnl("home");
+            contentView.show(Content, "clientHomePnl");
+        }
     }
     
     public void loginNav(){
@@ -267,8 +298,17 @@ public class Frame extends javax.swing.JFrame {
         java.util.Arrays.fill(confpass, '0');
     }
 
-    public AuthStatus loginAction(String username, char[] password){
-        return main.sqlite.authenticate(username, password);
+    public AuthStatus loginAction(String username, char[] password) {
+        AuthStatus status = main.sqlite.authenticate(username, password);
+        
+        if (status == AuthStatus.SUCCESS) {
+            User user = main.sqlite.getUserByUsername(username);
+            if (user != null) {
+                main.setCurrentUser(user);
+            }
+        }
+        
+        return status;
     }
 
     public boolean isUsernameTaken(String username) {
