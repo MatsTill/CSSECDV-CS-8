@@ -4,8 +4,8 @@ public class User {
     private int id;
     private String username;
     private String password;
-    private int role = 2;
     private int locked = 0;
+    private Role role;
     private String sessionId;
     private long sessionExpiry;
 
@@ -14,12 +14,12 @@ public class User {
         this.password = password;
     }
     
-    public User(int id, String username, String password, int role, int locked){
+    public User(int id, String username, String password, Role role, boolean locked){
         this.id = id;
         this.username = username;
         this.password = password;
         this.role = role;
-        this.locked = locked;
+        this.locked = locked ? 1 : 0;
     }
     
     public User(int id, String username, String password, int role, int locked, String sessionId, long sessionExpiry){
@@ -28,6 +28,16 @@ public class User {
         this.password = password;
         this.role = role;
         this.locked = locked;
+        this.sessionId = sessionId;
+        this.sessionExpiry = sessionExpiry;
+    }
+    
+    public User(int id, String username, String password, int role, int locked, String sessionId, long sessionExpiry){
+        this.id = id;
+        this.username = username;
+        this.password = password;
+        this.role = role;
+        this.locked = locked ? 1 : 0;
         this.sessionId = sessionId;
         this.sessionExpiry = sessionExpiry;
     }
@@ -56,11 +66,11 @@ public class User {
         this.password = password;
     }
 
-    public int getRole() {
+    public Role getRole() {
         return role;
     }
 
-    public void setRole(int role) {
+    public void setRole(Role role) {
         this.role = role;
     }
 

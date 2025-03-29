@@ -16,6 +16,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
+import Model.Role;
 
 public class SQLite {
     
@@ -92,7 +93,7 @@ public class SQLite {
             + " username TEXT NOT NULL UNIQUE,\n"
             + " password TEXT NOT NULL,\n"
             + " salt TEXT NOT NULL, \n"
-            + " role INTEGER DEFAULT 2,\n"
+            + " role TEXT DEFAULT 'CLIENT',\n"
             + " locked INTEGER DEFAULT 0,\n"
             + " failed_attempts INTEGER DEFAULT 0, \n"
             + " lockout_time INTEGER DEFAULT 0, \n"
@@ -314,8 +315,8 @@ public class SQLite {
                     rs.getInt("id"),
                     rs.getString("username"),
                     rs.getString("password"),
-                    rs.getInt("role"),
-                    rs.getInt("locked"),
+                    Role.valueOf(rs.getString("role")),
+                    rs.getBoolean("locked"),
                     rs.getString("session_id"),
                     rs.getLong("session_expiry")
                 ));
@@ -327,7 +328,7 @@ public class SQLite {
         return users;
     }
     
-    public void addUser(String username, String password, int role, String answer1, String answer2) {
+    public void addUser(String username, String password, Role role, String answer1, String answer2) {
         // Validate input
         String usernameError = DataValidator.validateUsername(username);
         if (usernameError != null) {
@@ -355,7 +356,7 @@ public class SQLite {
             pstmt.setString(1, sanitizedUsername);
             pstmt.setString(2, hashedPassword);
             pstmt.setString(3, saltStr);
-            pstmt.setInt(4, role);
+            pstmt.setString(4, role.name());
             pstmt.setInt(5, 0); // Not locked
             pstmt.setString(6, sanitizedAnswer1);
             pstmt.setString(7, sanitizedAnswer2);
@@ -414,8 +415,9 @@ public class SQLite {
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     int locked = rs.getInt("locked");
-                    
-                    if (locked == 1) {
+                    Role role = Role.valueOf(rs.getString("role"));
+                    if (locked == 1 || role == Role.DISABLED) {
+                        System.out.println("Account is locked or disabled: " + username);
                         return AuthStatus.ACCOUNT_LOCKED;
                     }
                     
@@ -544,11 +546,12 @@ public class SQLite {
 
     public void lockAccount(String username){
         long lockoutTime = System.currentTimeMillis();;
-        String sql = "UPDATE users SET locked = 1, lockout_time = ?, lockout_count = lockout_count + 1 WHERE username =?";
+        String sql = "UPDATE users SET locked = 1, lockout_time = ?, lockout_count = lockout_count + 1, role = ? WHERE username =?";
         try (Connection conn = this.connect();
             PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setLong(1, lockoutTime);
-            pstmt.setString(2, username);
+            pstmt.setString(2, Role.DISABLED.name());
+            pstmt.setString(3, username);
             pstmt.executeUpdate();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
@@ -610,7 +613,25 @@ public class SQLite {
         return 0;
     }   
     
- 
+    public User getUser(String username) {
+        String sql = "SELECT * FROM users WHERE username = ?";
+        try (Connection conn = this.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                int id = rs.getInt("id");
+                String password = rs.getString("password");
+                Role role = Role.valueOf(rs.getString("role"));
+                boolean locked = rs.getBoolean("locked");
+                return new User(id, username, password, role, locked);
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return null;
+    }
+     
     private Connection connect() {
         // SQLite connection string
         String url = "jdbc:sqlite:database.db";
