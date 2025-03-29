@@ -1,4 +1,3 @@
-
 package View;
 
 import Controller.AuthStatus;
@@ -10,6 +9,7 @@ import javax.swing.JTextField;
 public class Login extends javax.swing.JPanel {
 
     public Frame frame;
+    private boolean hasTriedSessionRestore = false;
     
     public Login() {
         initComponents();
@@ -314,4 +314,35 @@ public class Login extends javax.swing.JPanel {
     private javax.swing.JCheckBox showPasswordBox;
     private javax.swing.JTextField usernameFld;
     // End of variables declaration//GEN-END:variables
+
+    // This will be called when the login panel becomes visible
+    public void checkSavedSession() {
+        if (hasTriedSessionRestore) {
+            return;
+        }
+        
+        hasTriedSessionRestore = true;
+        
+        // For each user that has recently logged in, try to restore their session
+        String[] usernames = {"admin", "manager", "staff", "client1", "client2"};
+        
+        for (String username : usernames) {
+            String sessionId = frame.main.sessionManager.loadSessionFromFile(username);
+            if (sessionId != null && !sessionId.isEmpty()) {
+                if (frame.main.tryRestoreSession(sessionId)) {
+                    frame.mainNav();
+                    return;
+                }
+            }
+        }
+    }
+    
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        // This gets called when the component is added to a container (becomes visible)
+        if (frame != null && frame.main != null) {
+            checkSavedSession();
+        }
+    }
 }
