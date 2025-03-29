@@ -26,6 +26,7 @@ public class AdminHome extends javax.swing.JPanel {
     public MgmtProduct mgmtProduct;
     public MgmtUser mgmtUser;
     public SQLite sqlite;
+    private User currentUser;
     
     private CardLayout contentView = new CardLayout();
     
@@ -54,19 +55,36 @@ public class AdminHome extends javax.swing.JPanel {
 //        logsBtn.setVisible(false);
     }
     
+    public void init(SQLite sqlite, User user){
+        this.sqlite = sqlite;
+        this.currentUser = user;
+        
+        mgmtHistory = new MgmtHistory(sqlite);
+        mgmtLogs = new MgmtLogs(sqlite);
+        mgmtProduct = new MgmtProduct(sqlite);
+        mgmtUser = new MgmtUser(sqlite);
+        
+        Content.setLayout(contentView);
+        Content.add(new Home("WELCOME ADMIN!", new java.awt.Color(51, 153, 255)), "home");
+        Content.add(this.mgmtUser, "mgmtUser");
+        Content.add(this.mgmtHistory, "mgmtHistory");
+        Content.add(this.mgmtProduct, "mgmtProduct");
+        Content.add(this.mgmtLogs, "mgmtLogs");
+    }
+    
     public void showPnl(String pnl){
         switch(pnl){
-            case "logs":     mgmtLogs.init();
-                             contentView.show(Content, "mgmtLogs");
-                             break;
-            case "history":  mgmtHistory.init();
-                             contentView.show(Content, "mgmtHistory");
-                             break;
-            case "product":  mgmtProduct.init(sqlite);
-                             contentView.show(Content, "mgmtProduct");
-                             break;
             case "user":     mgmtUser.init();
                              contentView.show(Content, "mgmtUser");
+                             break;
+            case "history":  mgmtHistory.init(sqlite);
+                             contentView.show(Content, "mgmtHistory");
+                             break;
+            case "product":  mgmtProduct.init(sqlite, currentUser);
+                             contentView.show(Content, "mgmtProduct");
+                             break;
+            case "logs":     mgmtLogs.init();
+                             contentView.show(Content, "mgmtLogs");
                              break;
             default:         contentView.show(Content, "home");
                              break;

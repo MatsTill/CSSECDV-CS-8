@@ -774,5 +774,22 @@ public class SQLite {
             System.err.println("Error updating product: " + ex.getMessage());
         }
     }
+
+    public void deleteProduct(int id) {
+        String sql = "DELETE FROM product WHERE id = ?";
+        
+        try (Connection conn = DriverManager.getConnection(driverURL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, id);
+            int affectedRows = pstmt.executeUpdate();
+            
+            if (affectedRows == 0) {
+                System.err.println("Product deletion failed: Product with ID " + id + " not found");
+            }
+        } catch (Exception ex) {
+            System.err.println("Error deleting product: " + ex.getMessage());
+        }
+    }
 }
 

@@ -39,13 +39,37 @@ public class MgmtHistory extends javax.swing.JPanel {
 //        reportBtn.setVisible(false);
     }
 
-    public void init(){
-//      CLEAR TABLE
+    public void init(SQLite sqlite){
+        this.sqlite = sqlite;
+        
+        // CLEAR TABLE
         for(int nCtr = tableModel.getRowCount(); nCtr > 0; nCtr--){
             tableModel.removeRow(0);
         }
         
-//      LOAD CONTENTS
+        // LOAD CONTENTS
+        ArrayList<History> history = sqlite.getHistory();
+        for(int nCtr = 0; nCtr < history.size(); nCtr++){
+            Product product = sqlite.getProduct(history.get(nCtr).getName());
+            tableModel.addRow(new Object[]{
+                history.get(nCtr).getUsername(), 
+                history.get(nCtr).getName(), 
+                history.get(nCtr).getStock(), 
+                product.getPrice(), 
+                product.getPrice() * history.get(nCtr).getStock(), 
+                history.get(nCtr).getTimestamp()
+            });
+        }
+    }
+    
+    // Keep the no-parameter version for backward compatibility
+    public void init(){
+        // CLEAR TABLE
+        for(int nCtr = tableModel.getRowCount(); nCtr > 0; nCtr--){
+            tableModel.removeRow(0);
+        }
+        
+        // LOAD CONTENTS
         ArrayList<History> history = sqlite.getHistory();
         for(int nCtr = 0; nCtr < history.size(); nCtr++){
             Product product = sqlite.getProduct(history.get(nCtr).getName());

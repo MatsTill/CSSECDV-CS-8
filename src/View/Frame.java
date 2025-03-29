@@ -234,10 +234,11 @@ public class Frame extends javax.swing.JFrame {
         loginPnl.frame = this;
         registerPnl.frame = this;
         
+        // Initialize panels with user
         adminHomePnl.init(main.sqlite);
         clientHomePnl.init(main.sqlite);
-        managerHomePnl.init(main.sqlite);
-        staffHomePnl.init(main.sqlite);
+        managerHomePnl.init(main.sqlite, currentUser);
+        staffHomePnl.init(main.sqlite, currentUser);
         
         Container.setLayout(frameView);
         Container.add(loginPnl, "loginPnl");
@@ -262,6 +263,17 @@ public class Frame extends javax.swing.JFrame {
         
         User user = main.getCurrentUser();
         Role role = user.getRole();
+        
+        // Update home panels with current user
+        if (role == Role.ADMIN) {
+            adminHomePnl.init(main.sqlite, user);
+        } else if (role == Role.MANAGER) {
+            managerHomePnl.init(main.sqlite, user);
+        } else if (role == Role.STAFF) {
+            staffHomePnl.init(main.sqlite, user);
+        } else {
+            clientHomePnl.init(main.sqlite, user);
+        }
         
         // Show appropriate UI elements based on role
         adminBtn.setVisible(role == Role.ADMIN);

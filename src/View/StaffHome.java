@@ -26,6 +26,7 @@ public class StaffHome extends javax.swing.JPanel {
     public MgmtProduct mgmtProduct;
     public MgmtUser mgmtUser;
     public SQLite sqlite;
+    private User currentUser;
     
     private CardLayout contentView = new CardLayout();
     
@@ -54,10 +55,36 @@ public class StaffHome extends javax.swing.JPanel {
 //        logsBtn.setVisible(false);
     }
     
+    public void init(SQLite sqlite, User user){
+        this.sqlite = sqlite;
+        this.currentUser = user;
+        
+        mgmtHistory = new MgmtHistory(sqlite);
+        mgmtLogs = new MgmtLogs(sqlite);
+        mgmtProduct = new MgmtProduct(sqlite);
+        mgmtUser = new MgmtUser(sqlite);
+    
+        Content.setLayout(contentView);
+        Content.add(new Home("WELCOME STAFF!", new java.awt.Color(0,204,102)), "home");
+        Content.add(mgmtUser, "mgmtUser");
+        Content.add(mgmtHistory, "mgmtHistory");
+        Content.add(mgmtProduct, "mgmtProduct");
+        Content.add(mgmtLogs, "mgmtLogs");
+    }
+    
     public void showPnl(String pnl){
         switch(pnl){
-            case "product":  mgmtProduct.init(sqlite);
+            case "user":     mgmtUser.init();
+                             contentView.show(Content, "mgmtUser");
+                             break;
+            case "history":  mgmtHistory.init(sqlite);
+                             contentView.show(Content, "mgmtHistory");
+                             break;
+            case "product":  mgmtProduct.init(sqlite, currentUser);
                              contentView.show(Content, "mgmtProduct");
+                             break;
+            case "logs":     mgmtLogs.init();
+                             contentView.show(Content, "mgmtLogs");
                              break;
             default:         contentView.show(Content, "home");
                              break;
@@ -122,8 +149,11 @@ public class StaffHome extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void productsBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_productsBtnActionPerformed
-        mgmtProduct.init(sqlite);
+        mgmtProduct.init(sqlite, currentUser);
         productsBtn.setForeground(Color.red);
+//        historyBtn.setForeground(Color.black);
+//        usersBtn.setForeground(Color.black);
+//        logsBtn.setForeground(Color.black);
         contentView.show(Content, "mgmtProduct");
     }//GEN-LAST:event_productsBtnActionPerformed
     

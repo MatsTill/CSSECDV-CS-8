@@ -18,6 +18,8 @@ import java.awt.GridLayout;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import View.ValidationUtils;
+import Model.User;
+import Model.Role;
 
 /**
  *
@@ -27,6 +29,7 @@ public class MgmtProduct extends javax.swing.JPanel {
 
     public SQLite sqlite;
     public DefaultTableModel tableModel;
+    private User currentUser;
     
     // Add product field declarations
     private JTextField productIdFld;
@@ -85,10 +88,47 @@ public class MgmtProduct extends javax.swing.JPanel {
         this.add(buttonPanel, BorderLayout.SOUTH);
     }
 
-    public void init(SQLite sqlite){
+    public void init(SQLite sqlite) {
         this.sqlite = sqlite;
         loadTable();
         setupValidation();
+    }
+
+    public void init(SQLite sqlite, User user) {
+        this.sqlite = sqlite;
+        this.currentUser = user;
+        loadTable();
+        setupValidation();
+        setupButtonsByRole();
+    }
+    
+    private void setupButtonsByRole() {
+        if (currentUser == null) {
+            // If no user is provided, show all buttons (default behavior)
+            return;
+        }
+        
+        Role role = currentUser.getRole();
+        
+        // Configure button visibility based on role
+        if (role == Role.CLIENT) {
+            // Clients can only purchase
+            purchaseBtn.setVisible(true);
+            addBtn.setVisible(false);
+            editBtn.setVisible(false);
+            deleteBtn.setVisible(false);
+            
+            // Make fields read-only for clients
+            productNameFld.setEditable(false);
+            productStockFld.setEditable(false);
+            productPriceFld.setEditable(false);
+        } else if (role == Role.STAFF || role == Role.MANAGER || role == Role.ADMIN) {
+            // Staff, Managers and Admins can add, edit, delete, but not purchase
+            purchaseBtn.setVisible(false);
+            addBtn.setVisible(true);
+            editBtn.setVisible(true);
+            deleteBtn.setVisible(true);
+        }
     }
 
     private void setupValidation() {
@@ -226,18 +266,92 @@ public class MgmtProduct extends javax.swing.JPanel {
     
     private void purchaseBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_purchaseBtnActionPerformed
         if(table.getSelectedRow() >= 0){
-            JTextField stockFld = new JTextField("0");
-            designer(stockFld, "PRODUCT STOCK");
+            // Get the selected product details
+            int productId = Integer.parseInt(table.getValueAt(table.getSelectedRow(), 0).toString());
+            String productName = tableModel.getValueAt(table.getSelectedRow(), 1).toString();
+            int currentStock = Integer.parseInt(tableModel.getValueAt(table.getSelectedRow(), 2).toString());
+            double price = Double.parseDouble(tableModel.getValueAt(table.getSelectedRow(), 3).toString());
+            
+            // Create input field for quantity
+            JTextField stockFld = new JTextField("1");
+            designer(stockFld, "QUANTITY TO PURCHASE");
+            
+            // Apply numeric validation filter to quantity field
+            ValidationUtils.applyNumericFilter(stockFld, 7);
+            
+            // Validate stock is available
+            if(currentStock <= 0) {
+                JOptionPane.showMessageDialog(this, 
+                    "Sorry, this product is out of stock.", 
+                    "Out of Stock", 
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
 
             Object[] message = {
-                "How many " + tableModel.getValueAt(table.getSelectedRow(), 1) + " do you want to purchase?", stockFld
+                "How many " + productName + " do you want to purchase?", 
+                stockFld
             };
 
             int result = JOptionPane.showConfirmDialog(null, message, "PURCHASE PRODUCT", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null);
 
             if (result == JOptionPane.OK_OPTION) {
-                System.out.println(stockFld.getText());
+                // Validate quantity input
+                String quantityStr = stockFld.getText();
+                String quantityError = DataValidator.validateProductStock(quantityStr);
+                
+                if (quantityError != null) {
+                    showErrorMessage(quantityError);
+                    return;
+                }
+                
+                try {
+                    int quantity = Integer.parseInt(quantityStr);
+                    
+                    // Validate against available stock
+                    if (quantity <= 0) {
+                        showErrorMessage("Quantity must be greater than zero");
+                        return;
+                    }
+                    
+                    if (quantity > currentStock) {
+                        showErrorMessage("Cannot purchase more than available stock (" + currentStock + ")");
+                        return;
+                    }
+                    
+                    // Update product stock
+                    int newStock = currentStock - quantity;
+                    sqlite.updateProduct(productId, productName, newStock, price);
+                    
+                    // Get current timestamp
+                    String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+                    
+                    // Record the purchase in history
+                    String username = currentUser != null ? currentUser.getUsername() : "client";
+                    sqlite.addHistory(username, productName, quantity, timestamp);
+                    
+                    // Also log the purchase in logs
+                    sqlite.addLogs("PURCHASE", username, 
+                        "Purchased " + quantity + " " + productName + "(s) at $" + price + " each. Total: $" + (price * quantity), 
+                        timestamp);
+                    
+                    // Show success message
+                    JOptionPane.showMessageDialog(
+                        this,
+                        "Successfully purchased " + quantity + " " + productName + "(s)",
+                        "Purchase Complete",
+                        JOptionPane.INFORMATION_MESSAGE
+                    );
+                    
+                    // Refresh table
+                    loadTable();
+                    
+                } catch (NumberFormatException e) {
+                    showErrorMessage("Invalid quantity format");
+                }
             }
+        } else {
+            showErrorMessage("Please select a product to purchase");
         }
     }//GEN-LAST:event_purchaseBtnActionPerformed
 
@@ -271,6 +385,12 @@ public class MgmtProduct extends javax.swing.JPanel {
             
             // All validation passed, add the product
             sqlite.addProduct(name, stock, price);
+            
+            // Log the addition
+            String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+            String username = currentUser != null ? currentUser.getUsername() : "system";
+            sqlite.addLogs("ADD", username, "Added product: " + name + ", Stock: " + stock + ", Price: " + price, timestamp);
+            
             loadTable();
             
             // Show success message
@@ -326,8 +446,32 @@ public class MgmtProduct extends javax.swing.JPanel {
             int stock = Integer.parseInt(stockStr);
             double price = Double.parseDouble(priceStr);
             
+            // Get original product values to log the changes
+            int selectedRow = table.getSelectedRow();
+            String originalName = tableModel.getValueAt(selectedRow, 1).toString();
+            int originalStock = Integer.parseInt(tableModel.getValueAt(selectedRow, 2).toString());
+            double originalPrice = Double.parseDouble(tableModel.getValueAt(selectedRow, 3).toString());
+            
             // All validation passed, update the product
             sqlite.updateProduct(productId, name, stock, price);
+            
+            // Log the edit
+            String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+            String username = currentUser != null ? currentUser.getUsername() : "system";
+            String changes = "Changed product: " + originalName + " (ID: " + productId + ")";
+            
+            if (!originalName.equals(name)) {
+                changes += ", Name: " + originalName + " -> " + name;
+            }
+            if (originalStock != stock) {
+                changes += ", Stock: " + originalStock + " -> " + stock;
+            }
+            if (originalPrice != price) {
+                changes += ", Price: " + originalPrice + " -> " + price;
+            }
+            
+            sqlite.addLogs("EDIT", username, changes, timestamp);
+            
             loadTable();
             
             // Show success message
@@ -350,10 +494,39 @@ public class MgmtProduct extends javax.swing.JPanel {
 
     private void deleteBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteBtnActionPerformed
         if(table.getSelectedRow() >= 0){
-            int result = JOptionPane.showConfirmDialog(null, "Are you sure you want to delete " + tableModel.getValueAt(table.getSelectedRow(), 1) + "?", "DELETE PRODUCT", JOptionPane.YES_NO_OPTION);
+            int productId = Integer.parseInt(table.getValueAt(table.getSelectedRow(), 0).toString());
+            String productName = tableModel.getValueAt(table.getSelectedRow(), 1).toString();
+            
+            int result = JOptionPane.showConfirmDialog(null, 
+                "Are you sure you want to delete " + productName + "?", 
+                "DELETE PRODUCT", 
+                JOptionPane.YES_NO_OPTION);
             
             if (result == JOptionPane.YES_OPTION) {
-                System.out.println(tableModel.getValueAt(table.getSelectedRow(), 1));
+                // Delete the product
+                sqlite.deleteProduct(productId);
+                
+                // Log the deletion
+                String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+                String username = currentUser != null ? currentUser.getUsername() : "system";
+                sqlite.addLogs("DELETE", username, "Deleted product: " + productName, timestamp);
+                
+                // Show success message
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Product deleted successfully",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
+                
+                // Refresh table
+                loadTable();
+                
+                // Clear fields
+                productIdFld.setText("");
+                productNameFld.setText("");
+                productStockFld.setText("");
+                productPriceFld.setText("");
             }
         }
     }//GEN-LAST:event_deleteBtnActionPerformed
