@@ -93,7 +93,7 @@ public class Main {
         return false;
     }
 
-public void purchaseProduct(User user, Product product) {
+    public void purchaseProduct(User user, Product product) {
         if (AuthorizeRole.canPurchase(user)) {
             // Logic to purchase product
         } else {

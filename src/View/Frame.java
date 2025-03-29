@@ -197,39 +197,27 @@ public class Frame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void adminBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_adminBtnActionPerformed
-        if (currentUser != null && currentUser.getRole() == Role.ADMIN) {   
-            adminHomePnl.showPnl("home");
-            contentView.show(Content, "adminHomePnl");
-        } else {
-            JOptionPane.showMessageDialog(this, "Access Denied: You do not have permission to access this page.", "Error", JOptionPane.ERROR_MESSAGE);
-        }
+        // Redirect to Admin Home without additional checks
+        adminHomePnl.showPnl("home");
+        contentView.show(Content, "adminHomePnl");
     }//GEN-LAST:event_adminBtnActionPerformed
 
     private void managerBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_managerBtnActionPerformed
-        if (currentUser != null && (currentUser.getRole() == Role.MANAGER || currentUser.getRole() == Role.ADMIN)) {   
-            managerHomePnl.showPnl("home");
-            contentView.show(Content, "managerHomePnl");
-        } else {
-            JOptionPane.showMessageDialog(this, "Access Denied: You do not have permission to access this page.", "Error", JOptionPane.ERROR_MESSAGE);
-        }
+        // Redirect to Manager Home without additional checks
+        managerHomePnl.showPnl("home");
+        contentView.show(Content, "managerHomePnl");
     }//GEN-LAST:event_managerBtnActionPerformed
 
     private void staffBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_staffBtnActionPerformed
-        if (currentUser != null && (currentUser.getRole() == Role.STAFF || currentUser.getRole() == Role.MANAGER || currentUser.getRole() == Role.ADMIN)) {   
-            staffHomePnl.showPnl("home");
-            contentView.show(Content, "staffHomePnl");
-        } else {
-            JOptionPane.showMessageDialog(this, "Access Denied: You do not have permission to access this page.", "Error", JOptionPane.ERROR_MESSAGE);
-        }
+        // Redirect to Staff Home without additional checks
+        staffHomePnl.showPnl("home");
+        contentView.show(Content, "staffHomePnl");
     }//GEN-LAST:event_staffBtnActionPerformed
 
     private void clientBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clientBtnActionPerformed
-        if (currentUser != null && (currentUser.getRole() == Role.CLIENT || currentUser.getRole() == Role.MANAGER || currentUser.getRole() == Role.ADMIN)) {   
-            clientHomePnl.showPnl("home");
-            contentView.show(Content, "clientHomePnl");
-        } else {
-            JOptionPane.showMessageDialog(this, "Access Denied: You do not have permission to access this page.", "Error", JOptionPane.ERROR_MESSAGE);
-        }
+        // Redirect to Client Home without additional checks
+        clientHomePnl.showPnl("home");
+        contentView.show(Content, "clientHomePnl");
     }//GEN-LAST:event_clientBtnActionPerformed
 
     private void logoutBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutBtnActionPerformed
@@ -237,7 +225,6 @@ public class Frame extends javax.swing.JFrame {
         frameView.show(Container, "loginPnl");
     }//GEN-LAST:event_logoutBtnActionPerformed
 
-    
     public void init(Main controller){
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         this.setTitle("CSSECDV - SECURITY Svcs");
@@ -278,9 +265,9 @@ public class Frame extends javax.swing.JFrame {
         
         // Show appropriate UI elements based on role
         adminBtn.setVisible(role == Role.ADMIN);
-        managerBtn.setVisible(role == Role.MANAGER || role == Role.ADMIN);
-        staffBtn.setVisible(role == Role.STAFF || role == Role.MANAGER || role == Role.ADMIN);
-        clientBtn.setVisible(role == Role.CLIENT || role == Role.MANAGER || role == Role.ADMIN);
+        managerBtn.setVisible(role == Role.MANAGER);
+        staffBtn.setVisible(role == Role.STAFF);
+        clientBtn.setVisible(role == Role.CLIENT);
         
         frameView.show(Container, "homePnl");
         
@@ -288,10 +275,10 @@ public class Frame extends javax.swing.JFrame {
         if (role == Role.ADMIN) {
             adminHomePnl.showPnl("home");
             contentView.show(Content, "adminHomePnl");
-        } else if (role == Role.MANAGER || role == Role.ADMIN) {
+        } else if (role == Role.MANAGER) {
             managerHomePnl.showPnl("home");
             contentView.show(Content, "managerHomePnl");
-        } else if (role == Role.STAFF || role == Role.MANAGER || role == Role.ADMIN) {
+        } else if (role == Role.STAFF) {
             staffHomePnl.showPnl("home");
             contentView.show(Content, "staffHomePnl");
         } else {
