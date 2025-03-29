@@ -13,7 +13,7 @@ import java.awt.*;
 
 public class Frame extends javax.swing.JFrame {
 
-    private Main main;
+    public Main main;
     private User currentUser;
     public Login loginPnl = new Login();
     public Register registerPnl = new Register();
@@ -225,11 +225,13 @@ public class Frame extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_clientBtnActionPerformed
 
-    private void logoutBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutBtnActionPerformed
-        main.logout();
-        currentUser = null;
+    private void logoutBtnActionPerformed(java.awt.event.ActionEvent evt) {
+        // Logout the user
+        main.sqlite.logout();
+        
+        // Return to login screen
         frameView.show(Container, "loginPnl");
-    }//GEN-LAST:event_logoutBtnActionPerformed
+    }
 
     public void init(Main controller) {
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -297,32 +299,67 @@ public class Frame extends javax.swing.JFrame {
         }
     }
 
+    public AuthStatus loginAction(String username, char[] password) {
+        // Authenticate the user
+        AuthStatus status = main.sqlite.authenticate(username, password);
+        
+        if (status == AuthStatus.SUCCESS) {
+            User user = main.sqlite.getCurrentUser();
+            if (user != null) {
+                // Create a session for the user
+                String sessionId = main.sessionManager.createSession(user);
+                user.setSessionId(sessionId);
+                
+                // Store user in both SQLite and Main session management
+                main.sqlite.setCurrentUser(user);
+                main.setCurrentUser(user);
+                
+                // Update UI and navigate to the home page
+                setCurrentUser(user);
+                updateUIBasedOnRole();
+                mainNav();
+            }
+        }
+        
+        return status;
+    }
+
+    private void updateUIBasedOnRole() {
+        User currentUser = main.sqlite.getCurrentUser();
+        if (currentUser == null) {
+            return;
+        }
+        
+        Role role = currentUser.getRole();
+        
+        // Configure UI based on role
+        adminBtn.setVisible(role == Role.ADMIN);
+        managerBtn.setVisible(role == Role.ADMIN || role == Role.MANAGER);
+        staffBtn.setVisible(role == Role.ADMIN || role == Role.MANAGER || role == Role.STAFF);
+        clientBtn.setVisible(role == Role.ADMIN || role == Role.MANAGER || role == Role.STAFF || role == Role.CLIENT);
+    }
 
     public void mainNav() {
-        if (!main.isUserAuthenticated()) {
+        if (main.sqlite.getCurrentUser() == null) {
             frameView.show(Container, "loginPnl");
             return;
         }
         
-        User user = main.getCurrentUser();
-        int role = user.getRole();
+        // Update UI elements based on role
+        updateUIBasedOnRole();
         
-        // Show appropriate UI elements based on role
-        adminBtn.setVisible(role >= 5);
-        managerBtn.setVisible(role >= 4);
-        staffBtn.setVisible(role >= 3);
-        clientBtn.setVisible(role >= 2);
-        
+        // Navigate to appropriate home panel based on role
+        User currentUser = main.sqlite.getCurrentUser();
+        Role userRole = currentUser.getRole();
         frameView.show(Container, "homePnl");
-
-        // Direct to appropriate home panel based on role
-        if (role >= 5) {
+        
+        if (userRole == Role.ADMIN) {
             adminHomePnl.showPnl("home");
             contentView.show(Content, "adminHomePnl");
-        } else if (role >= 4) {
+        } else if (userRole == Role.MANAGER) {
             managerHomePnl.showPnl("home");
             contentView.show(Content, "managerHomePnl");
-        } else if (role >= 3) {
+        } else if (userRole == Role.STAFF) {
             staffHomePnl.showPnl("home");
             contentView.show(Content, "staffHomePnl");
         } else {
@@ -342,24 +379,13 @@ public class Frame extends javax.swing.JFrame {
     public void registerAction(String username, char[] password, char[] confpass, String ques1, String ques2) {
         String passwordStr = new String(password);
 
-        main.sqlite.addUser(username, passwordStr, Role.CLIENT, ques1, ques2); // Assuming default values for the additional arguments
+        // Use Role.CLIENT directly instead of role value 2
+        Role clientRole = Role.CLIENT;
+        main.sqlite.addUser(username, passwordStr, clientRole, ques1, ques2);
 
         // for clearing out memory
         java.util.Arrays.fill(password, '0');
         java.util.Arrays.fill(confpass, '0');
-    }
-
-    public AuthStatus loginAction(String username, char[] password) {
-        AuthStatus status = main.sqlite.authenticate(username, password);
-        
-        if (status == AuthStatus.SUCCESS) {
-            User user = main.sqlite.getUserByUsername(username);
-            if (user != null) {
-                main.setCurrentUser(user);
-            }
-        }
-        
-        return status;
     }
 
     public boolean isUsernameTaken(String username) {

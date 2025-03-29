@@ -22,22 +22,20 @@ public class User {
         this.locked = locked ? 1 : 0;
     }
     
-    public User(int id, String username, String password, int role, int locked, String sessionId, long sessionExpiry){
+    public User(int id, String username, String password, Role role, int locked){
         this.id = id;
         this.username = username;
         this.password = password;
         this.role = role;
         this.locked = locked;
-        this.sessionId = sessionId;
-        this.sessionExpiry = sessionExpiry;
     }
     
-    public User(int id, String username, String password, int role, int locked, String sessionId, long sessionExpiry){
+    public User(int id, String username, String password, Role role, int locked, String sessionId, long sessionExpiry){
         this.id = id;
         this.username = username;
         this.password = password;
         this.role = role;
-        this.locked = locked ? 1 : 0;
+        this.locked = locked;
         this.sessionId = sessionId;
         this.sessionExpiry = sessionExpiry;
     }
@@ -76,6 +74,10 @@ public class User {
 
     public int getLocked() {
         return locked;
+    }
+    
+    public boolean isLocked() {
+        return locked == 1;
     }
 
     public void setLocked(int locked) {

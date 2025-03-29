@@ -7,6 +7,10 @@ import View.ValidationUtils;
 import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
+import Model.User;
+
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 
 public class Login extends javax.swing.JPanel {
 
@@ -193,7 +197,7 @@ public class Login extends javax.swing.JPanel {
         add(jPanel1);
         jPanel1.setBounds(150, 42, 389, 416);
     }// </editor-fold>//GEN-END:initComponents
-    private void loginBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loginBtnActionPerformed
+    private void loginBtnActionPerformed(java.awt.event.ActionEvent evt) {
         String username = usernameFld.getText();
         char[] password = passwordFld.getPassword();
 
@@ -210,40 +214,46 @@ public class Login extends javax.swing.JPanel {
             return;
         }
         
+        // Check if account is locked
         SQLite sqlite = new SQLite();
         if (sqlite.isAccountLocked(username)) {
             showErrorMessage("This account is locked. Please contact an administrator.");
             return;
         }
 
+        // Attempt authentication
         AuthStatus status = frame.loginAction(username, password);
 
         switch (status) {
             case SUCCESS:
-                sqlite.unlockAccount(username);
+                // Navigate to appropriate home based on role
                 frame.mainNav();
                 break;
+            
             case ACCOUNT_LOCKED:
                 showErrorMessage("This account is locked. Please contact an administrator.");
                 break;
+            
             case INVALID_CREDENTIALS:
+                // Record failed attempt and check if account should be locked
                 sqlite.recordFailedAttempt(username);
                 if (sqlite.getFailedAttempts(username) >= 3) {
                     sqlite.lockAccount(username);
                     showErrorMessage("Too many failed attempts. Account is locked.");
                 } else {
-                    showErrorMessage("Invalid username or password");
+                    int attemptsLeft = 3 - sqlite.getFailedAttempts(username);
+                    showErrorMessage("Invalid username or password. " + attemptsLeft + " attempts remaining.");
                 }
                 break;
+            
             case SYSTEM_ERROR:
                 showErrorMessage("An error occurred. Please try again later.");
                 break;
         }
         
-        // Clear passwords after failure
+        // Clear passwords after attempt
         passwordFld.setText("");
-    
-    }//GEN-LAST:event_loginBtnActionPerformed
+    }
 
     private void registerBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_registerBtnActionPerformed
        

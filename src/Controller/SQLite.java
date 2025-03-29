@@ -23,6 +23,137 @@ public class SQLite {
     public int DEBUG_MODE = 0;
     String driverURL = "jdbc:sqlite:" + "database.db";
     
+    // Methods for user session management
+    private User currentUser = null;
+
+    public void setCurrentUser(User user) {
+        this.currentUser = user;
+    }
+
+    public User getCurrentUser() {
+        return currentUser;
+    }
+
+    public String getCurrentUsername() {
+        return (currentUser != null) ? currentUser.getUsername() : "guest";
+    }
+
+    public int getCurrentUserRole() {
+        return (currentUser != null) ? currentUser.getRole().ordinal() : 0;
+    }
+
+    // Methods for product operations
+    public void purchaseProduct(int productId, int amount) {
+        String sql = "UPDATE product SET stock = stock - ? WHERE id = ?";
+        
+        try (Connection conn = DriverManager.getConnection(driverURL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, amount);
+            pstmt.setInt(2, productId);
+            
+            pstmt.executeUpdate();
+        } catch (Exception ex) {
+            System.err.println("Error purchasing product: " + ex.getMessage());
+        }
+    }
+
+    public void deleteProduct(int productId) {
+        String sql = "DELETE FROM product WHERE id = ?";
+        
+        try (Connection conn = DriverManager.getConnection(driverURL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, productId);
+            pstmt.executeUpdate();
+        } catch (Exception ex) {
+            System.err.println("Error deleting product: " + ex.getMessage());
+        }
+    }
+
+    // Update role-based authentication
+    public AuthStatus authenticate(String username, char[] password) {
+        // Validate username
+        String usernameError = DataValidator.validateUsername(username);
+        if (usernameError != null) {
+            System.err.println("Username validation error: " + usernameError);
+            return AuthStatus.INVALID_CREDENTIALS;
+        }
+        
+        // Sanitize username
+        String sanitizedUsername = DataValidator.sanitizeInput(username);
+        
+        String sql = "SELECT id, username, password, role, locked, salt FROM users WHERE username = ?";
+        
+        try (Connection conn = DriverManager.getConnection(driverURL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, sanitizedUsername);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    int locked = rs.getInt("locked");
+                    
+                    if (locked == 1) {
+                        return AuthStatus.ACCOUNT_LOCKED;
+                    }
+                    
+                    int id = rs.getInt("id");
+                    String storedUsername = rs.getString("username");
+                    String storedPassword = rs.getString("password");
+                    String roleStr = rs.getString("role");
+                    Role role = Role.valueOf(roleStr);
+                    String salt = rs.getString("salt");
+                    byte[] saltBytes = Base64.getDecoder().decode(salt);
+                    
+                    // Hash the provided password with the same salt
+                    String passwordToCheck = hashPassword(new String(password), saltBytes);
+                    
+                    // Immediately clear the password from memory
+                    java.util.Arrays.fill(password, '0');
+                    
+                    if (storedPassword.equals(passwordToCheck)) {
+                        // Create and store the current user
+                        User user = new User(id, storedUsername, storedPassword, role, locked);
+                        setCurrentUser(user);
+                        
+                        // Reset failed attempts on successful login
+                        resetFailedAttempts(sanitizedUsername);
+                        
+                        // Log successful login
+                        String timestamp = new java.sql.Timestamp(System.currentTimeMillis()).toString();
+                        addLogs("AUTH", storedUsername, "Login successful", timestamp);
+                        
+                        return AuthStatus.SUCCESS;
+                    } else {
+                        // Log failed login
+                        String timestamp = new java.sql.Timestamp(System.currentTimeMillis()).toString();
+                        addLogs("AUTH", username, "Failed login attempt", timestamp);
+                        
+                        return AuthStatus.INVALID_CREDENTIALS;
+                    }
+                } else {
+                    return AuthStatus.INVALID_CREDENTIALS;
+                }
+            }
+        } catch (Exception ex) {
+            System.err.println("Authentication error: " + ex.getMessage());
+            return AuthStatus.SYSTEM_ERROR;
+        }
+    }
+
+    // Method to logout the current user
+    public void logout() {
+        if (currentUser != null) {
+            // Log the logout
+            String timestamp = new java.sql.Timestamp(System.currentTimeMillis()).toString();
+            addLogs("AUTH", currentUser.getUsername(), "Logout", timestamp);
+            
+            // Clear the current user
+            currentUser = null;
+        }
+    }
+
     public void createNewDatabase() {
         try (Connection conn = DriverManager.getConnection(driverURL)) {
             if (conn != null) {
@@ -316,7 +447,7 @@ public class SQLite {
                     rs.getString("username"),
                     rs.getString("password"),
                     Role.valueOf(rs.getString("role")),
-                    rs.getBoolean("locked"),
+                    rs.getInt("locked"),
                     rs.getString("session_id"),
                     rs.getLong("session_expiry")
                 ));
@@ -392,60 +523,6 @@ public class SQLite {
             System.out.print(ex);
         }
         return product;
-    }
-
-    public AuthStatus authenticate(String username, char[] password) {
-        // Validate username
-        String usernameError = DataValidator.validateUsername(username);
-        if (usernameError != null) {
-            System.err.println("Username validation error: " + usernameError);
-            return AuthStatus.INVALID_CREDENTIALS;
-        }
-        
-        // Sanitize username
-        String sanitizedUsername = DataValidator.sanitizeInput(username);
-        
-        String sql = "SELECT username, password, salt, locked FROM users WHERE username = ?";
-        
-        try (Connection conn = DriverManager.getConnection(driverURL);
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            pstmt.setString(1, sanitizedUsername);
-            
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    int locked = rs.getInt("locked");
-                    Role role = Role.valueOf(rs.getString("role"));
-                    if (locked == 1 || role == Role.DISABLED) {
-                        System.out.println("Account is locked or disabled: " + username);
-                        return AuthStatus.ACCOUNT_LOCKED;
-                    }
-                    
-                    String storedPassword = rs.getString("password");
-                    String salt = rs.getString("salt");
-                    byte[] saltBytes = Base64.getDecoder().decode(salt);
-                    
-                    // Hash the provided password with the same salt
-                    String passwordToCheck = hashPassword(new String(password), saltBytes);
-                    
-                    // Immediately clear the password from memory
-                    java.util.Arrays.fill(password, '0');
-                    
-                    if (storedPassword.equals(passwordToCheck)) {
-                        // Reset failed attempts on successful login
-                        resetFailedAttempts(sanitizedUsername);
-                        return AuthStatus.SUCCESS;
-                    } else {
-                        return AuthStatus.INVALID_CREDENTIALS;
-                    }
-                } else {
-                    return AuthStatus.INVALID_CREDENTIALS;
-                }
-            }
-        } catch (Exception ex) {
-            System.err.println("Authentication error: " + ex.getMessage());
-            return AuthStatus.SYSTEM_ERROR;
-        }
     }
 
     private String generateSalt() {
@@ -674,11 +751,14 @@ public class SQLite {
             ResultSet rs = pstmt.executeQuery();
             
             if (rs.next()) {
+                String roleStr = rs.getString("role");
+                Role role = Role.valueOf(roleStr);
+                
                 return new User(
                     rs.getInt("id"),
                     rs.getString("username"),
                     rs.getString("password"),
-                    rs.getInt("role"),
+                    role,
                     rs.getInt("locked"),
                     rs.getString("session_id"),
                     rs.getLong("session_expiry")
@@ -701,11 +781,14 @@ public class SQLite {
             ResultSet rs = pstmt.executeQuery();
             
             if (rs.next()) {
+                String roleStr = rs.getString("role");
+                Role role = Role.valueOf(roleStr);
+                
                 return new User(
                     rs.getInt("id"),
                     rs.getString("username"),
                     rs.getString("password"),
-                    rs.getInt("role"),
+                    role,
                     rs.getInt("locked"),
                     rs.getString("session_id"),
                     rs.getLong("session_expiry")
@@ -790,6 +873,18 @@ public class SQLite {
             pstmt.executeUpdate();
         } catch (Exception ex) {
             System.err.println("Error updating product: " + ex.getMessage());
+        }
+    }
+
+    // Method to convert integer role values to Role enum
+    private Role intToRole(int roleValue) {
+        switch(roleValue) {
+            case 5: return Role.ADMIN;
+            case 4: return Role.MANAGER;
+            case 3: return Role.STAFF;
+            case 2: return Role.CLIENT;
+            case 1: return Role.DISABLED;
+            default: return Role.UNREGISTERED;
         }
     }
 }
