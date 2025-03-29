@@ -12,6 +12,12 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
+import Controller.DataValidator;
+import java.awt.BorderLayout;
+import java.awt.GridLayout;
+import javax.swing.BoxLayout;
+import javax.swing.JLabel;
+import View.ValidationUtils;
 
 /**
  *
@@ -22,29 +28,88 @@ public class MgmtProduct extends javax.swing.JPanel {
     public SQLite sqlite;
     public DefaultTableModel tableModel;
     
+    // Add product field declarations
+    private JTextField productIdFld;
+    private JTextField productNameFld;
+    private JTextField productStockFld;
+    private JTextField productPriceFld;
+    private JPanel fieldsPanel;
+    
     public MgmtProduct(SQLite sqlite) {
         initComponents();
         this.sqlite = sqlite;
         tableModel = (DefaultTableModel)table.getModel();
         table.getTableHeader().setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 14));
-
-//        UNCOMMENT TO DISABLE BUTTONS
-//        purchaseBtn.setVisible(false);
-//        addBtn.setVisible(false);
-//        editBtn.setVisible(false);
-//        deleteBtn.setVisible(false);
+        
+        // Create the product fields panel
+        setupProductFields();
+    }
+    
+    private void setupProductFields() {
+        // Initialize fields
+        productIdFld = new JTextField();
+        productNameFld = new JTextField();
+        productStockFld = new JTextField();
+        productPriceFld = new JTextField();
+        
+        // Style fields
+        designer(productIdFld, "PRODUCT ID");
+        designer(productNameFld, "PRODUCT NAME");
+        designer(productStockFld, "PRODUCT STOCK");
+        designer(productPriceFld, "PRODUCT PRICE");
+        
+        // Make ID field read-only
+        productIdFld.setEditable(false);
+        
+        // Create fields panel
+        fieldsPanel = new JPanel();
+        fieldsPanel.setLayout(new BoxLayout(fieldsPanel, BoxLayout.Y_AXIS));
+        
+        // Add fields to panel
+        fieldsPanel.add(productIdFld);
+        fieldsPanel.add(productNameFld);
+        fieldsPanel.add(productStockFld);
+        fieldsPanel.add(productPriceFld);
+        
+        // Add fields panel to the top of the component
+        this.setLayout(new BorderLayout());
+        this.add(fieldsPanel, BorderLayout.NORTH);
+        this.add(jScrollPane1, BorderLayout.CENTER);
+        
+        // Add buttons panel at the bottom
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 4));
+        buttonPanel.add(purchaseBtn);
+        buttonPanel.add(addBtn);
+        buttonPanel.add(editBtn);
+        buttonPanel.add(deleteBtn);
+        this.add(buttonPanel, BorderLayout.SOUTH);
     }
 
-    public void init(){
+    public void init(SQLite sqlite){
+        this.sqlite = sqlite;
+        loadTable();
+        setupValidation();
+    }
+
+    private void setupValidation() {
+        ValidationUtils.applyProductFilters(
+            productNameFld,
+            productStockFld,
+            productPriceFld
+        );
+    }
+
+    public void loadTable(){
         //      CLEAR TABLE
         for(int nCtr = tableModel.getRowCount(); nCtr > 0; nCtr--){
             tableModel.removeRow(0);
         }
         
-//      LOAD CONTENTS
+        //      LOAD CONTENTS
         ArrayList<Product> products = sqlite.getProduct();
         for(int nCtr = 0; nCtr < products.size(); nCtr++){
             tableModel.addRow(new Object[]{
+                products.get(nCtr).getId(),
                 products.get(nCtr).getName(), 
                 products.get(nCtr).getStock(), 
                 products.get(nCtr).getPrice()});
@@ -78,17 +143,17 @@ public class MgmtProduct extends javax.swing.JPanel {
         table.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         table.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null}
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
             },
             new String [] {
-                "Name", "Stock", "Price"
+                "ID", "Name", "Stock", "Price"
             }
         ) {
             boolean[] canEdit = new boolean [] {
-                false, false, false
+                false, false, false, false
             };
 
             public boolean isCellEditable(int rowIndex, int columnIndex) {
@@ -97,11 +162,18 @@ public class MgmtProduct extends javax.swing.JPanel {
         });
         table.setRowHeight(24);
         table.getTableHeader().setReorderingAllowed(false);
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tableMouseClicked(evt);
+            }
+        });
         jScrollPane1.setViewportView(table);
         if (table.getColumnModel().getColumnCount() > 0) {
             table.getColumnModel().getColumn(0).setMinWidth(50);
-            table.getColumnModel().getColumn(1).setMaxWidth(100);
+            table.getColumnModel().getColumn(0).setMaxWidth(50);
+            table.getColumnModel().getColumn(1).setMinWidth(150);
             table.getColumnModel().getColumn(2).setMaxWidth(100);
+            table.getColumnModel().getColumn(3).setMaxWidth(100);
         }
 
         purchaseBtn.setBackground(new java.awt.Color(255, 255, 255));
@@ -140,46 +212,25 @@ public class MgmtProduct extends javax.swing.JPanel {
                 deleteBtnActionPerformed(evt);
             }
         });
-
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
-        this.setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(0, 0, 0)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(purchaseBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(0, 0, 0)
-                        .addComponent(addBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(0, 0, 0)
-                        .addComponent(editBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(0, 0, 0)
-                        .addComponent(deleteBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addComponent(jScrollPane1))
-                .addGap(0, 0, 0))
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(0, 0, 0)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 222, Short.MAX_VALUE)
-                .addGap(0, 0, 0)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(deleteBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(addBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(purchaseBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(editBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)))
-        );
     }// </editor-fold>//GEN-END:initComponents
 
+    private void tableMouseClicked(java.awt.event.MouseEvent evt) {
+        int row = table.getSelectedRow();
+        if (row >= 0) {
+            productIdFld.setText(table.getValueAt(row, 0).toString());
+            productNameFld.setText(table.getValueAt(row, 1).toString());
+            productStockFld.setText(table.getValueAt(row, 2).toString());
+            productPriceFld.setText(table.getValueAt(row, 3).toString());
+        }
+    }
+    
     private void purchaseBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_purchaseBtnActionPerformed
         if(table.getSelectedRow() >= 0){
             JTextField stockFld = new JTextField("0");
             designer(stockFld, "PRODUCT STOCK");
 
             Object[] message = {
-                "How many " + tableModel.getValueAt(table.getSelectedRow(), 0) + " do you want to purchase?", stockFld
+                "How many " + tableModel.getValueAt(table.getSelectedRow(), 1) + " do you want to purchase?", stockFld
             };
 
             int result = JOptionPane.showConfirmDialog(null, message, "PURCHASE PRODUCT", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null);
@@ -190,62 +241,131 @@ public class MgmtProduct extends javax.swing.JPanel {
         }
     }//GEN-LAST:event_purchaseBtnActionPerformed
 
-    private void addBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addBtnActionPerformed
-        JTextField nameFld = new JTextField();
-        JTextField stockFld = new JTextField();
-        JTextField priceFld = new JTextField();
-
-        designer(nameFld, "PRODUCT NAME");
-        designer(stockFld, "PRODUCT STOCK");
-        designer(priceFld, "PRODUCT PRICE");
-
-        Object[] message = {
-            "Insert New Product Details:", nameFld, stockFld, priceFld
-        };
-
-        int result = JOptionPane.showConfirmDialog(null, message, "ADD PRODUCT", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null);
-
-        if (result == JOptionPane.OK_OPTION) {
-            System.out.println(nameFld.getText());
-            System.out.println(stockFld.getText());
-            System.out.println(priceFld.getText());
+    private void addBtnActionPerformed(java.awt.event.ActionEvent evt) {
+        String name = productNameFld.getText();
+        String stockStr = productStockFld.getText();
+        String priceStr = productPriceFld.getText();
+        
+        // Validate product fields
+        String nameError = DataValidator.validateProductName(name);
+        if (nameError != null) {
+            showErrorMessage(nameError);
+            return;
         }
-    }//GEN-LAST:event_addBtnActionPerformed
-
-    private void editBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editBtnActionPerformed
-        if(table.getSelectedRow() >= 0){
-            JTextField nameFld = new JTextField(tableModel.getValueAt(table.getSelectedRow(), 0) + "");
-            JTextField stockFld = new JTextField(tableModel.getValueAt(table.getSelectedRow(), 1) + "");
-            JTextField priceFld = new JTextField(tableModel.getValueAt(table.getSelectedRow(), 2) + "");
-
-            designer(nameFld, "PRODUCT NAME");
-            designer(stockFld, "PRODUCT STOCK");
-            designer(priceFld, "PRODUCT PRICE");
-
-            Object[] message = {
-                "Edit Product Details:", nameFld, stockFld, priceFld
-            };
-
-            int result = JOptionPane.showConfirmDialog(null, message, "EDIT PRODUCT", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null);
-
-            if (result == JOptionPane.OK_OPTION) {
-                System.out.println(nameFld.getText());
-                System.out.println(stockFld.getText());
-                System.out.println(priceFld.getText());
-            }
+        
+        String stockError = DataValidator.validateProductStock(stockStr);
+        if (stockError != null) {
+            showErrorMessage(stockError);
+            return;
         }
-    }//GEN-LAST:event_editBtnActionPerformed
+        
+        String priceError = DataValidator.validateProductPrice(priceStr);
+        if (priceError != null) {
+            showErrorMessage(priceError);
+            return;
+        }
+        
+        try {
+            int stock = Integer.parseInt(stockStr);
+            double price = Double.parseDouble(priceStr);
+            
+            // All validation passed, add the product
+            sqlite.addProduct(name, stock, price);
+            loadTable();
+            
+            // Show success message
+            JOptionPane.showMessageDialog(
+                this,
+                "Product added successfully",
+                "Success",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+            
+            // Clear fields
+            productIdFld.setText("");
+            productNameFld.setText("");
+            productStockFld.setText("");
+            productPriceFld.setText("");
+        } catch (NumberFormatException e) {
+            showErrorMessage("Invalid number format");
+        }
+    }
+
+    private void editBtnActionPerformed(java.awt.event.ActionEvent evt) {
+        String id = productIdFld.getText();
+        String name = productNameFld.getText();
+        String stockStr = productStockFld.getText();
+        String priceStr = productPriceFld.getText();
+        
+        if (id.isEmpty()) {
+            showErrorMessage("Please select a product to edit");
+            return;
+        }
+        
+        // Validate product fields
+        String nameError = DataValidator.validateProductName(name);
+        if (nameError != null) {
+            showErrorMessage(nameError);
+            return;
+        }
+        
+        String stockError = DataValidator.validateProductStock(stockStr);
+        if (stockError != null) {
+            showErrorMessage(stockError);
+            return;
+        }
+        
+        String priceError = DataValidator.validateProductPrice(priceStr);
+        if (priceError != null) {
+            showErrorMessage(priceError);
+            return;
+        }
+        
+        try {
+            int productId = Integer.parseInt(id);
+            int stock = Integer.parseInt(stockStr);
+            double price = Double.parseDouble(priceStr);
+            
+            // All validation passed, update the product
+            sqlite.updateProduct(productId, name, stock, price);
+            loadTable();
+            
+            // Show success message
+            JOptionPane.showMessageDialog(
+                this,
+                "Product updated successfully",
+                "Success",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+            
+            // Clear fields
+            productIdFld.setText("");
+            productNameFld.setText("");
+            productStockFld.setText("");
+            productPriceFld.setText("");
+        } catch (NumberFormatException e) {
+            showErrorMessage("Invalid number format");
+        }
+    }
 
     private void deleteBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteBtnActionPerformed
         if(table.getSelectedRow() >= 0){
-            int result = JOptionPane.showConfirmDialog(null, "Are you sure you want to delete " + tableModel.getValueAt(table.getSelectedRow(), 0) + "?", "DELETE PRODUCT", JOptionPane.YES_NO_OPTION);
+            int result = JOptionPane.showConfirmDialog(null, "Are you sure you want to delete " + tableModel.getValueAt(table.getSelectedRow(), 1) + "?", "DELETE PRODUCT", JOptionPane.YES_NO_OPTION);
             
             if (result == JOptionPane.YES_OPTION) {
-                System.out.println(tableModel.getValueAt(table.getSelectedRow(), 0));
+                System.out.println(tableModel.getValueAt(table.getSelectedRow(), 1));
             }
         }
     }//GEN-LAST:event_deleteBtnActionPerformed
 
+    private void showErrorMessage(String message) {
+        JOptionPane.showMessageDialog(
+            this,
+            message,
+            "Product Error",
+            JOptionPane.ERROR_MESSAGE
+        );
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton addBtn;

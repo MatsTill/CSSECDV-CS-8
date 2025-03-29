@@ -25,6 +25,7 @@ public class ManagerHome extends javax.swing.JPanel {
     public MgmtLogs mgmtLogs;
     public MgmtProduct mgmtProduct;
     public MgmtUser mgmtUser;
+    public SQLite sqlite;
     
     private CardLayout contentView = new CardLayout();
     
@@ -33,6 +34,7 @@ public class ManagerHome extends javax.swing.JPanel {
     }
     
     public void init(SQLite sqlite){
+        this.sqlite = sqlite;
         mgmtHistory = new MgmtHistory(sqlite);
         mgmtLogs = new MgmtLogs(sqlite);
         mgmtProduct = new MgmtProduct(sqlite);
@@ -52,8 +54,20 @@ public class ManagerHome extends javax.swing.JPanel {
 //        logsBtn.setVisible(false);
     }
     
-    public void showPnl(String panelName){
-        contentView.show(Content, panelName);
+    public void showPnl(String pnl){
+        switch(pnl){
+            case "logs":     mgmtLogs.init();
+                             contentView.show(Content, "mgmtLogs");
+                             break;
+            case "history":  mgmtHistory.init();
+                             contentView.show(Content, "mgmtHistory");
+                             break;
+            case "product":  mgmtProduct.init(sqlite);
+                             contentView.show(Content, "mgmtProduct");
+                             break;
+            default:         contentView.show(Content, "home");
+                             break;
+        }
     }
 
     /**
@@ -165,7 +179,7 @@ public class ManagerHome extends javax.swing.JPanel {
     }//GEN-LAST:event_usersBtnActionPerformed
 
     private void productsBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_productsBtnActionPerformed
-        mgmtProduct.init();
+        mgmtProduct.init(sqlite);
         usersBtn.setForeground(Color.black);
         productsBtn.setForeground(Color.red);
         historyBtn.setForeground(Color.black);

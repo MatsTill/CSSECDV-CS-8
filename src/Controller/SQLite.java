@@ -161,35 +161,79 @@ public class SQLite {
     }
     
     public void addHistory(String username, String name, int stock, String timestamp) {
-        String sql = "INSERT INTO history(username,name,stock,timestamp) VALUES('" + username + "','" + name + "','" + stock + "','" + timestamp + "')";
+        // Sanitize inputs to prevent SQL injection
+        String sanitizedUsername = DataValidator.sanitizeInput(username);
+        String sanitizedName = DataValidator.sanitizeInput(name);
+        String sanitizedTimestamp = DataValidator.sanitizeInput(timestamp);
+        
+        String sql = "INSERT INTO history(username, name, stock, timestamp) VALUES(?, ?, ?, ?)";
         
         try (Connection conn = DriverManager.getConnection(driverURL);
-            Statement stmt = conn.createStatement()){
-            stmt.execute(sql);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, sanitizedUsername);
+            pstmt.setString(2, sanitizedName);
+            pstmt.setInt(3, stock);
+            pstmt.setString(4, sanitizedTimestamp);
+            
+            pstmt.executeUpdate();
         } catch (Exception ex) {
-            System.out.print(ex);
+            System.err.println("Error adding history: " + ex.getMessage());
         }
     }
     
     public void addLogs(String event, String username, String desc, String timestamp) {
-        String sql = "INSERT INTO logs(event,username,desc,timestamp) VALUES('" + event + "','" + username + "','" + desc + "','" + timestamp + "')";
+        // Sanitize inputs to prevent SQL injection
+        String sanitizedEvent = DataValidator.sanitizeInput(event);
+        String sanitizedUsername = DataValidator.sanitizeInput(username);
+        String sanitizedDesc = DataValidator.sanitizeInput(desc);
+        String sanitizedTimestamp = DataValidator.sanitizeInput(timestamp);
+        
+        String sql = "INSERT INTO logs(event, username, desc, timestamp) VALUES(?, ?, ?, ?)";
         
         try (Connection conn = DriverManager.getConnection(driverURL);
-            Statement stmt = conn.createStatement()){
-            stmt.execute(sql);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, sanitizedEvent);
+            pstmt.setString(2, sanitizedUsername);
+            pstmt.setString(3, sanitizedDesc);
+            pstmt.setString(4, sanitizedTimestamp);
+            
+            pstmt.executeUpdate();
         } catch (Exception ex) {
-            System.out.print(ex);
+            System.err.println("Error adding log: " + ex.getMessage());
         }
     }
     
     public void addProduct(String name, int stock, double price) {
-        String sql = "INSERT INTO product(name,stock,price) VALUES('" + name + "','" + stock + "','" + price + "')";
+        // Validate product data
+        String nameError = DataValidator.validateProductName(name);
+        String stockError = DataValidator.validateProductStock(Integer.toString(stock));
+        String priceError = DataValidator.validateProductPrice(Double.toString(price));
+        
+        if (nameError != null || stockError != null || priceError != null) {
+            System.err.println("Product validation error: " + 
+                              (nameError != null ? nameError : "") + 
+                              (stockError != null ? " " + stockError : "") + 
+                              (priceError != null ? " " + priceError : ""));
+            return;
+        }
+        
+        // Sanitize product name
+        String sanitizedName = DataValidator.sanitizeInput(name);
+        
+        String sql = "INSERT INTO product(name, stock, price) VALUES(?, ?, ?)";
         
         try (Connection conn = DriverManager.getConnection(driverURL);
-            Statement stmt = conn.createStatement()){
-            stmt.execute(sql);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, sanitizedName);
+            pstmt.setInt(2, stock);
+            pstmt.setDouble(3, price);
+            
+            pstmt.executeUpdate();
         } catch (Exception ex) {
-            System.out.print(ex);
+            System.err.println("Error adding product: " + ex.getMessage());
         }
     }
     
@@ -244,10 +288,12 @@ public class SQLite {
             ResultSet rs = stmt.executeQuery(sql)){
             
             while (rs.next()) {
-                products.add(new Product(rs.getInt("id"),
-                                   rs.getString("name"),
-                                   rs.getInt("stock"),
-                                   rs.getFloat("price")));
+                products.add(new Product(
+                    rs.getInt("id"),
+                    rs.getString("name"),
+                    rs.getInt("stock"),
+                    rs.getFloat("price")
+                ));
             }
         } catch (Exception ex) {
             System.out.print(ex);
@@ -281,21 +327,42 @@ public class SQLite {
         return users;
     }
     
-    public void addUser(String username, String password, int role, String securityAnswer1, String securityAnswer2) {
-        String salt = generateSalt();
+    public void addUser(String username, String password, int role, String answer1, String answer2) {
+        // Validate input
+        String usernameError = DataValidator.validateUsername(username);
+        if (usernameError != null) {
+            System.err.println("Username validation error: " + usernameError);
+            return;
+        }
+
+        // Sanitize inputs to prevent SQL injection
+        String sanitizedUsername = DataValidator.sanitizeInput(username);
+        String sanitizedAnswer1 = DataValidator.sanitizeInput(answer1);
+        String sanitizedAnswer2 = DataValidator.sanitizeInput(answer2);
+        
+        // Hash password with salt
+        SecureRandom random = new SecureRandom();
+        byte[] salt = new byte[16];
+        random.nextBytes(salt);
+        String saltStr = Base64.getEncoder().encodeToString(salt);
         String hashedPassword = hashPassword(password, salt);
-        String sql = "INSERT INTO users(username, password, salt, role, security_answer1, security_answer2) VALUES(?, ?, ?, ?, ?, ?)";
-        try (Connection conn = this.connect();
+        
+        String sql = "INSERT INTO users(username, password, salt, role, locked, security_answer1, security_answer2) VALUES(?, ?, ?, ?, ?, ?, ?)";
+        
+        try (Connection conn = DriverManager.getConnection(driverURL);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, username);
+            
+            pstmt.setString(1, sanitizedUsername);
             pstmt.setString(2, hashedPassword);
-            pstmt.setString(3, salt);
+            pstmt.setString(3, saltStr);
             pstmt.setInt(4, role);
-            pstmt.setString(5, securityAnswer1);
-            pstmt.setString(6, securityAnswer2);
+            pstmt.setInt(5, 0); // Not locked
+            pstmt.setString(6, sanitizedAnswer1);
+            pstmt.setString(7, sanitizedAnswer2);
+            
             pstmt.executeUpdate();
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
+        } catch (Exception ex) {
+            System.err.println("Error adding user: " + ex.getMessage());
         }
     }
     
@@ -327,49 +394,55 @@ public class SQLite {
     }
 
     public AuthStatus authenticate(String username, char[] password) {
-        String passwordStr = new String(password);
-
-        // Prepared Statement
-        String sql = "SELECT id, username, password, salt, role, locked FROM users WHERE username = ?";
-
+        // Validate username
+        String usernameError = DataValidator.validateUsername(username);
+        if (usernameError != null) {
+            System.err.println("Username validation error: " + usernameError);
+            return AuthStatus.INVALID_CREDENTIALS;
+        }
+        
+        // Sanitize username
+        String sanitizedUsername = DataValidator.sanitizeInput(username);
+        
+        String sql = "SELECT username, password, salt, locked FROM users WHERE username = ?";
+        
         try (Connection conn = DriverManager.getConnection(driverURL);
-            PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1,username);
-
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, sanitizedUsername);
+            
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    
-                    // Locked Account check
                     int locked = rs.getInt("locked");
+                    
                     if (locked == 1) {
-                        System.out.println("Account is locked: " + username);
                         return AuthStatus.ACCOUNT_LOCKED;
                     }
-
-                    // Password check
-                    // NO HASHING YET GOES HERE WHEN IMPLEMENTING HASHING
+                    
                     String storedPassword = rs.getString("password");
-                    String salt = rs.getString("salt");     
-                    String hashedPassword = hashPassword(passwordStr, salt);
-
-                    if (storedPassword.equals(hashedPassword)) {
+                    String salt = rs.getString("salt");
+                    byte[] saltBytes = Base64.getDecoder().decode(salt);
+                    
+                    // Hash the provided password with the same salt
+                    String passwordToCheck = hashPassword(new String(password), saltBytes);
+                    
+                    // Immediately clear the password from memory
+                    java.util.Arrays.fill(password, '0');
+                    
+                    if (storedPassword.equals(passwordToCheck)) {
+                        // Reset failed attempts on successful login
+                        resetFailedAttempts(sanitizedUsername);
                         return AuthStatus.SUCCESS;
                     } else {
                         return AuthStatus.INVALID_CREDENTIALS;
-                    } 
-
+                    }
                 } else {
-                    // No user found
                     return AuthStatus.INVALID_CREDENTIALS;
                 }
             }
-            
         } catch (Exception ex) {
-            System.out.print(ex);
+            System.err.println("Authentication error: " + ex.getMessage());
             return AuthStatus.SYSTEM_ERROR;
-        } finally {
-            // Clear shit
-            java.util.Arrays.fill(password, '0');
         }
     }
 
@@ -380,46 +453,70 @@ public class SQLite {
         return Base64.getEncoder().encodeToString(salt);
     }
 
-    private String hashPassword(String password, String salt) {
+    private String hashPassword(String password, byte[] salt) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
-            md.update(salt.getBytes());
+            md.update(salt);
             byte[] hashedPassword = md.digest(password.getBytes());
             return Base64.getEncoder().encodeToString(hashedPassword);
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+            System.err.println("Error hashing password: " + e.getMessage());
+            return null;
         }
     }
     
     public boolean verifySecurityAnswers(String username, String answer1, String answer2) {
+        // Sanitize inputs to prevent SQL injection
+        String sanitizedUsername = DataValidator.sanitizeInput(username);
+        String sanitizedAnswer1 = DataValidator.sanitizeInput(answer1);
+        String sanitizedAnswer2 = DataValidator.sanitizeInput(answer2);
+        
         String sql = "SELECT security_answer1, security_answer2 FROM users WHERE username = ?";
-        try (Connection conn = this.connect();
+        
+        try (Connection conn = DriverManager.getConnection(driverURL);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, username);
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                String storedAnswer1 = rs.getString("security_answer1");
-                String storedAnswer2 = rs.getString("security_answer2");
-                return storedAnswer1.equals(answer1) && storedAnswer2.equals(answer2);
+            
+            pstmt.setString(1, sanitizedUsername);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    String storedAnswer1 = rs.getString("security_answer1");
+                    String storedAnswer2 = rs.getString("security_answer2");
+                    
+                    return sanitizedAnswer1.equalsIgnoreCase(storedAnswer1) && 
+                           sanitizedAnswer2.equalsIgnoreCase(storedAnswer2);
+                }
             }
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
+        } catch (Exception ex) {
+            System.err.println("Error verifying security answers: " + ex.getMessage());
         }
+        
         return false;
     }
     
     public void updatePassword(String username, String newPassword) {
-        String salt = generateSalt();
+        // Sanitize username
+        String sanitizedUsername = DataValidator.sanitizeInput(username);
+        
+        // Hash new password with salt
+        SecureRandom random = new SecureRandom();
+        byte[] salt = new byte[16];
+        random.nextBytes(salt);
+        String saltStr = Base64.getEncoder().encodeToString(salt);
         String hashedPassword = hashPassword(newPassword, salt);
+        
         String sql = "UPDATE users SET password = ?, salt = ? WHERE username = ?";
-        try (Connection conn = this.connect();
+        
+        try (Connection conn = DriverManager.getConnection(driverURL);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
             pstmt.setString(1, hashedPassword);
-            pstmt.setString(2, salt);
-            pstmt.setString(3, username);
+            pstmt.setString(2, saltStr);
+            pstmt.setString(3, sanitizedUsername);
+            
             pstmt.executeUpdate();
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
+        } catch (Exception ex) {
+            System.err.println("Error updating password: " + ex.getMessage());
         }
     }
     
@@ -427,6 +524,17 @@ public class SQLite {
         String sql = "UPDATE users SET failed_attempts = failed_attempts + 1 WHERE username =?";
         try (Connection conn = this.connect();
             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public void resetFailedAttempts(String username) {
+        String sql = "UPDATE users SET failed_attempts = 0 WHERE username = ?";
+        try (Connection conn = this.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, username);
             pstmt.executeUpdate();
         } catch (SQLException e) {
@@ -628,6 +736,39 @@ public class SQLite {
             pstmt.executeUpdate();
         } catch (Exception ex) {
             System.out.print(ex);
+        }
+    }
+
+    public void updateProduct(int id, String name, int stock, double price) {
+        // Validate product data
+        String nameError = DataValidator.validateProductName(name);
+        String stockError = DataValidator.validateProductStock(Integer.toString(stock));
+        String priceError = DataValidator.validateProductPrice(Double.toString(price));
+        
+        if (nameError != null || stockError != null || priceError != null) {
+            System.err.println("Product validation error: " + 
+                              (nameError != null ? nameError : "") + 
+                              (stockError != null ? " " + stockError : "") + 
+                              (priceError != null ? " " + priceError : ""));
+            return;
+        }
+        
+        // Sanitize product name
+        String sanitizedName = DataValidator.sanitizeInput(name);
+        
+        String sql = "UPDATE product SET name = ?, stock = ?, price = ? WHERE id = ?";
+        
+        try (Connection conn = DriverManager.getConnection(driverURL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, sanitizedName);
+            pstmt.setInt(2, stock);
+            pstmt.setDouble(3, price);
+            pstmt.setInt(4, id);
+            
+            pstmt.executeUpdate();
+        } catch (Exception ex) {
+            System.err.println("Error updating product: " + ex.getMessage());
         }
     }
 }

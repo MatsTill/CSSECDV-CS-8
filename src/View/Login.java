@@ -2,6 +2,8 @@ package View;
 
 import Controller.AuthStatus;
 import Controller.SQLite;
+import Controller.DataValidator;
+import View.ValidationUtils;
 import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
@@ -13,6 +15,7 @@ public class Login extends javax.swing.JPanel {
     
     public Login() {
         initComponents();
+        setupValidation();
     }
     
 
@@ -194,13 +197,21 @@ public class Login extends javax.swing.JPanel {
         String username = usernameFld.getText();
         char[] password = passwordFld.getPassword();
 
-        if (username.isEmpty()) {
-            showErrorMessage("Username is required");
+        // Validate username
+        String usernameError = DataValidator.validateUsername(username);
+        if (usernameError != null) {
+            showErrorMessage(usernameError);
+            return;
+        }
+        
+        // Validate password not empty
+        if (password.length == 0) {
+            showErrorMessage("Password is required");
             return;
         }
         
         SQLite sqlite = new SQLite();
-        if (sqlite.isAccountLocked(username)){
+        if (sqlite.isAccountLocked(username)) {
             showErrorMessage("This account is locked. Please contact an administrator.");
             return;
         }
@@ -215,7 +226,7 @@ public class Login extends javax.swing.JPanel {
             case ACCOUNT_LOCKED:
                 showErrorMessage("This account is locked. Please contact an administrator.");
                 break;
-             case INVALID_CREDENTIALS:
+            case INVALID_CREDENTIALS:
                 sqlite.recordFailedAttempt(username);
                 if (sqlite.getFailedAttempts(username) >= 3) {
                     sqlite.lockAccount(username);
@@ -344,5 +355,9 @@ public class Login extends javax.swing.JPanel {
         if (frame != null && frame.main != null) {
             checkSavedSession();
         }
+    }
+
+    private void setupValidation() {
+        ValidationUtils.applyUsernameFilter(usernameFld, 20);
     }
 }

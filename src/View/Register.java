@@ -1,5 +1,8 @@
-
 package View;
+
+import Controller.DataValidator;
+import javax.swing.JOptionPane;
+import View.ValidationUtils;
 
 public class Register extends javax.swing.JPanel {
 
@@ -7,6 +10,7 @@ public class Register extends javax.swing.JPanel {
     
     public Register() {
         initComponents();
+        setupValidation();
     }
 
     @SuppressWarnings("unchecked")
@@ -127,76 +131,70 @@ public class Register extends javax.swing.JPanel {
         jPanel1.setBounds(200, 251, 380, 114);
     }// </editor-fold>//GEN-END:initComponents
 
-    private void registerBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_registerBtnActionPerformed
+    private void registerBtnActionPerformed(java.awt.event.ActionEvent evt) {
         String username = usernameFld.getText();
         char[] password = passwordFld.getPassword();
         char[] confpass = confpassFld.getPassword();
-        String ques1 = securityQues1.getText();
-        String ques2 = securityQues2.getText();
-
-
-        // Username check
-        if (username.isEmpty()) {
-            showErrorMessage("Username cannot be empty");
-            return;
-        }
-
-        // Check username length
-        if (username.length() < 3) {
-            showErrorMessage("Username must be at least 3 characters long");
-            return;
-        }
-
-        if (username.length() > 30) {
-            showErrorMessage("Username too long (maximum 30 characters)");
-            return;
-        }
-
-        // Check for valid characters
-        if (!username.matches("^[a-zA-Z0-9_.-]+$")) {
-            showErrorMessage("Username can only contain letters, numbers, underscores, dots and hyphens");
-            return;
-        }
-
-        // Check username availability
-        if (frame.isUsernameTaken(username)) {
-            showErrorMessage("Username already exists. Please choose another username.");
-            return;
-        }
-
-        // Password matching check
-        if (!java.util.Arrays.equals(password, confpass)) {
-            showErrorMessage("Passwords do not match");
-            return;
-        }
-
-        // Password length check
-        if (password.length < 8) {
-            showErrorMessage("Password must be at least 8 characters long");
-            return;
-        }
-
-        if (password.length > 64) {
-            showErrorMessage("Password too long (maximum 64 characters)");
+        String answer1 = securityQues1.getText();
+        String answer2 = securityQues2.getText();
+        
+        // Validate all fields
+        String usernameError = DataValidator.validateUsername(username);
+        if (usernameError != null) {
+            showErrorMessage(usernameError);
             return;
         }
         
-        if (ques1.isEmpty() || ques2.isEmpty()) {
-            showErrorMessage("Security Questions cannot be empty");
+        // Check if username already exists
+        if (frame.isUsernameTaken(username)) {
+            showErrorMessage("Username already exists");
             return;
         }
-       
-        frame.registerAction(username, password, confpass, ques1, ques2);
-
-        // Clear all sensitive data from fields for security
+        
+        String passwordError = DataValidator.validatePassword(password.clone());
+        if (passwordError != null) {
+            showErrorMessage(passwordError);
+            return;
+        }
+        
+        String passwordMatchError = DataValidator.validatePasswordMatch(password.clone(), confpass.clone());
+        if (passwordMatchError != null) {
+            showErrorMessage(passwordMatchError);
+            return;
+        }
+        
+        String answer1Error = DataValidator.validateSecurityAnswer(answer1);
+        if (answer1Error != null) {
+            showErrorMessage("Security answer 1: " + answer1Error);
+            return;
+        }
+        
+        String answer2Error = DataValidator.validateSecurityAnswer(answer2);
+        if (answer2Error != null) {
+            showErrorMessage("Security answer 2: " + answer2Error);
+            return;
+        }
+        
+        // All validation passed, register the user
+        frame.registerAction(username, password, confpass, answer1, answer2);
+        
+        // Show success message
+        JOptionPane.showMessageDialog(
+            this,
+            "Registration successful",
+            "Success",
+            JOptionPane.INFORMATION_MESSAGE
+        );
+        
+        // Clear fields and return to login
         usernameFld.setText("");
         passwordFld.setText("");
         confpassFld.setText("");
         securityQues1.setText("");
         securityQues2.setText("");
-
+        
         frame.loginNav();
-    }//GEN-LAST:event_registerBtnActionPerformed
+    }
 
     private void backBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backBtnActionPerformed
         usernameFld.setText("");
@@ -222,14 +220,22 @@ public class Register extends javax.swing.JPanel {
         // TODO add your handling code here:
     }//GEN-LAST:event_securityQues1ActionPerformed
 
-
-
     private void showErrorMessage(String message) {
-        javax.swing.JOptionPane.showMessageDialog(
+        JOptionPane.showMessageDialog(
             this,
             message,
             "Registration Error",
-            javax.swing.JOptionPane.ERROR_MESSAGE
+            JOptionPane.ERROR_MESSAGE
+        );
+    }
+    
+    private void setupValidation() {
+        ValidationUtils.applyRegistrationFilters(
+            usernameFld,
+            passwordFld,
+            confpassFld,
+            securityQues1,
+            securityQues2
         );
     }
     
