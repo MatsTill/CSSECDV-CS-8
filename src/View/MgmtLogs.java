@@ -9,6 +9,7 @@ import Controller.SQLite;
 import Model.Logs;
 import java.util.ArrayList;
 import javax.swing.table.DefaultTableModel;
+import Model.User;
 
 /**
  *
@@ -18,6 +19,7 @@ public class MgmtLogs extends javax.swing.JPanel {
 
     public SQLite sqlite;
     public DefaultTableModel tableModel;
+    private User currentUser;
     
     public MgmtLogs(SQLite sqlite) {
         initComponents();
@@ -44,6 +46,21 @@ public class MgmtLogs extends javax.swing.JPanel {
                 logs.get(nCtr).getUsername(), 
                 logs.get(nCtr).getDesc(), 
                 logs.get(nCtr).getTimestamp()});
+        }
+    }
+    
+    public void init(User currentUser){
+        this.currentUser = currentUser;
+        init();
+        
+        // Only admins can access debug and clear functionality
+        boolean isAdmin = currentUser != null && currentUser.getRole() == Model.Role.ADMIN;
+        debugBtn.setVisible(isAdmin);
+        clearBtn.setVisible(isAdmin);
+        
+        // Update button text to show current debug mode
+        if (isAdmin) {
+            debugBtn.setText(sqlite.DEBUG_MODE == 1 ? "DISABLE DEBUG MODE" : "ENABLE DEBUG MODE");
         }
     }
     /**
@@ -135,14 +152,72 @@ public class MgmtLogs extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void clearBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearBtnActionPerformed
+        // Only allow admins to clear logs
+        int result = javax.swing.JOptionPane.showConfirmDialog(
+            this,
+            "Are you sure you want to clear all logs?",
+            "Clear Logs",
+            javax.swing.JOptionPane.YES_NO_OPTION,
+            javax.swing.JOptionPane.WARNING_MESSAGE
+        );
         
+        if (result == javax.swing.JOptionPane.YES_OPTION) {
+            // Implement clearing logs - would need a method in SQLite
+            // For now, just log the attempt
+            String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+            String username = (currentUser != null) ? currentUser.getUsername() : "unknown";
+            sqlite.addLogs("LOGS_CLEAR", username, "Attempted to clear logs", timestamp);
+            
+            javax.swing.JOptionPane.showMessageDialog(
+                this,
+                "ONly a SUPER ADMIN can clear logs..",
+                "NOT ALLOWED",
+                javax.swing.JOptionPane.INFORMATION_MESSAGE
+            );
+            
+            // Refresh logs display
+            init();
+        }
     }//GEN-LAST:event_clearBtnActionPerformed
 
     private void debugBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_debugBtnActionPerformed
-        if(sqlite.DEBUG_MODE == 1)
-            sqlite.DEBUG_MODE = 0;
-        else
-            sqlite.DEBUG_MODE = 1;
+        // Only allow admins to toggle debug mode
+        if (currentUser == null || currentUser.getRole() != Model.Role.ADMIN) {
+            javax.swing.JOptionPane.showMessageDialog(
+                this,
+                "Only administrators can toggle debug mode.",
+                "Permission Denied",
+                javax.swing.JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+        
+        boolean newDebugMode = sqlite.DEBUG_MODE == 0;
+        sqlite.DEBUG_MODE = newDebugMode ? 1 : 0;
+        
+        // Update button text
+        debugBtn.setText(newDebugMode ? "DISABLE DEBUG MODE" : "ENABLE DEBUG MODE");
+        
+        // Log the debug mode change
+        String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+        String action = newDebugMode ? "ENABLED" : "DISABLED";
+        sqlite.addLogs("DEBUG_MODE_" + action, currentUser.getUsername(), 
+                      "Debug mode " + action.toLowerCase() + " by administrator", timestamp);
+        
+        // Refresh logs to show the new entry
+        init();
+        
+        // Show status message
+        javax.swing.JOptionPane.showMessageDialog(
+            this,
+            "Debug mode has been " + action.toLowerCase() + ".\nCurrent status: " + 
+            (newDebugMode ? "ENABLED" : "DISABLED"),
+            "Debug Mode",
+            javax.swing.JOptionPane.INFORMATION_MESSAGE
+        );
+        
+        // Print to console for additional debugging
+        System.out.println("DEBUG MODE " + action + ": " + sqlite.DEBUG_MODE);
     }//GEN-LAST:event_debugBtnActionPerformed
 
 

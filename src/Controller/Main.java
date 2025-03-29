@@ -49,6 +49,9 @@ public class Main {
         sqlite.addUser("client2", "qwerty1234", Role.CLIENT, "Angel", "DLSU");
 
         sqlite.addProduct("Beans", 10, 10.0);
+        sqlite.addProduct("Carrots", 10, 10.0);
+        sqlite.addProduct("Oranges", 10, 10.0);
+        sqlite.addProduct("Banana", 10, 10.0);
 
         // Initialize User Interface
         Frame frame = new Frame();

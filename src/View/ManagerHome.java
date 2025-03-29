@@ -77,7 +77,7 @@ public class ManagerHome extends javax.swing.JPanel {
             case "user":     mgmtUser.init();
                              contentView.show(Content, "mgmtUser");
                              break;
-            case "history":  mgmtHistory.init(sqlite);
+            case "history":  mgmtHistory.init(sqlite, currentUser);
                              contentView.show(Content, "mgmtHistory");
                              break;
             case "product":  mgmtProduct.init(sqlite, currentUser);
@@ -172,9 +172,11 @@ public class ManagerHome extends javax.swing.JPanel {
     }//GEN-LAST:event_productsBtnActionPerformed
 
     private void historyBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_historyBtnActionPerformed
-        mgmtHistory.init(sqlite);
+        mgmtHistory.init(sqlite, currentUser);
         productsBtn.setForeground(Color.black);
         historyBtn.setForeground(Color.red);
+//        usersBtn.setForeground(Color.black);
+//        logsBtn.setForeground(Color.black);
         contentView.show(Content, "mgmtHistory");
     }//GEN-LAST:event_historyBtnActionPerformed
     

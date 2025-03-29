@@ -522,6 +522,28 @@ public class SQLite {
         }
     }
     
+    public void updateUserRole(String username, Role newRole) {
+        // Sanitize username
+        String sanitizedUsername = DataValidator.sanitizeInput(username);
+        
+        String sql = "UPDATE users SET role = ? WHERE username = ?";
+        
+        try (Connection conn = DriverManager.getConnection(driverURL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, newRole.name());
+            pstmt.setString(2, sanitizedUsername);
+            
+            int rowsUpdated = pstmt.executeUpdate();
+            if (rowsUpdated == 0) {
+                throw new SQLException("User not found: " + username);
+            }
+        } catch (Exception ex) {
+            System.err.println("Error updating user role: " + ex.getMessage());
+            throw new RuntimeException("Failed to update user role", ex);
+        }
+    }
+    
     public void recordFailedAttempt(String username){
         String sql = "UPDATE users SET failed_attempts = failed_attempts + 1 WHERE username =?";
         try (Connection conn = this.connect();
@@ -790,6 +812,83 @@ public class SQLite {
         } catch (Exception ex) {
             System.err.println("Error deleting product: " + ex.getMessage());
         }
+    }
+    
+    /**
+     * Clears all logs from the logs table.
+     * This should only be called by admin users.
+     * 
+     * @param adminUsername The username of the admin performing the action
+     * @return The number of logs deleted
+     */
+    public int clearLogs(String adminUsername) {
+        // First, log the clear logs action
+        String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+        addLogs("LOGS_CLEARED", adminUsername, "All logs cleared by administrator", timestamp);
+        
+        int rowsDeleted = 0;
+        
+        if (DEBUG_MODE == 1) {
+            System.out.println("CLEARING LOGS: Admin " + adminUsername + " is clearing all logs");
+        }
+        
+        // Now delete all logs except the one we just added
+        String sql = "DELETE FROM logs WHERE id NOT IN (SELECT MAX(id) FROM logs)";
+        
+        try (Connection conn = DriverManager.getConnection(driverURL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            rowsDeleted = pstmt.executeUpdate();
+            
+            if (DEBUG_MODE == 1) {
+                System.out.println("LOGS CLEARED: " + rowsDeleted + " log entries deleted");
+            }
+        } catch (Exception ex) {
+            System.err.println("Error clearing logs: " + ex.getMessage());
+        }
+        
+        return rowsDeleted;
+    }
+    
+    /**
+     * Verifies if the given password matches a user's current password
+     * This method does not increment failed attempts counter, for use with the change password feature
+     * 
+     * @param username The username
+     * @param password The password to verify
+     * @return true if the password matches, false otherwise
+     */
+    public boolean verifyCurrentPassword(String username, char[] password) {
+        // Sanitize username
+        String sanitizedUsername = DataValidator.sanitizeInput(username);
+        
+        String sql = "SELECT password, salt FROM users WHERE username = ?";
+        
+        try (Connection conn = DriverManager.getConnection(driverURL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, sanitizedUsername);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    String storedPassword = rs.getString("password");
+                    String salt = rs.getString("salt");
+                    byte[] saltBytes = Base64.getDecoder().decode(salt);
+                    
+                    // Hash the provided password with the same salt
+                    String passwordToCheck = hashPassword(new String(password), saltBytes);
+                    
+                    // Immediately clear the password from memory
+                    java.util.Arrays.fill(password, '0');
+                    
+                    return storedPassword.equals(passwordToCheck);
+                }
+            }
+        } catch (Exception ex) {
+            System.err.println("Password verification error: " + ex.getMessage());
+        }
+        
+        return false;
     }
 }
 

@@ -2,6 +2,7 @@ package View;
 
 import Controller.Main;
 import Controller.AuthStatus;
+import Controller.DataValidator;
 import Model.User;
 import Model.Role;
 import java.awt.BorderLayout;
@@ -43,6 +44,7 @@ public class Frame extends javax.swing.JFrame {
         staffBtn = new javax.swing.JButton();
         clientBtn = new javax.swing.JButton();
         logoutBtn = new javax.swing.JButton();
+        changePassword = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setBackground(new java.awt.Color(153, 153, 153));
@@ -119,6 +121,16 @@ public class Frame extends javax.swing.JFrame {
             }
         });
 
+        changePassword.setBackground(new java.awt.Color(250, 250, 250));
+        changePassword.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
+        changePassword.setText("Change Password");
+        changePassword.setFocusable(false);
+        changePassword.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                changePasswordActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout NavigationLayout = new javax.swing.GroupLayout(Navigation);
         Navigation.setLayout(NavigationLayout);
         NavigationLayout.setHorizontalGroup(
@@ -131,7 +143,8 @@ public class Frame extends javax.swing.JFrame {
                     .addComponent(managerBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(staffBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(clientBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(logoutBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(logoutBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(changePassword, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
         NavigationLayout.setVerticalGroup(
@@ -147,7 +160,9 @@ public class Frame extends javax.swing.JFrame {
                 .addComponent(staffBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(clientBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 139, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 100, Short.MAX_VALUE)
+                .addComponent(changePassword, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(logoutBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
@@ -221,9 +236,96 @@ public class Frame extends javax.swing.JFrame {
     }//GEN-LAST:event_clientBtnActionPerformed
 
     private void logoutBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutBtnActionPerformed
+        // Log logout event before actually logging out
+        if (main.getCurrentUser() != null) {
+            String username = main.getCurrentUser().getUsername();
+            String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+            main.sqlite.addLogs("USER_LOGOUT", username, "User logged out", timestamp);
+        }
+        
         main.logout();
         frameView.show(Container, "loginPnl");
     }//GEN-LAST:event_logoutBtnActionPerformed
+
+    private void changePasswordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_changePasswordActionPerformed
+        // Create and show a password change dialog
+        javax.swing.JPasswordField currentPasswordField = new javax.swing.JPasswordField();
+        javax.swing.JPasswordField newPasswordField = new javax.swing.JPasswordField();
+        javax.swing.JPasswordField confirmPasswordField = new javax.swing.JPasswordField();
+        
+        Object[] message = {
+            "Current Password:", currentPasswordField,
+            "New Password:", newPasswordField,
+            "Confirm New Password:", confirmPasswordField
+        };
+        
+        int option = javax.swing.JOptionPane.showConfirmDialog(
+            this, 
+            message, 
+            "Change Password", 
+            javax.swing.JOptionPane.OK_CANCEL_OPTION
+        );
+        
+        if (option == javax.swing.JOptionPane.OK_OPTION) {
+            char[] currentPassword = currentPasswordField.getPassword();
+            char[] newPassword = newPasswordField.getPassword();
+            char[] confirmPassword = confirmPasswordField.getPassword();
+            
+            // Validate current password not empty
+            if (currentPassword.length == 0) {
+                javax.swing.JOptionPane.showMessageDialog(
+                    this,
+                    "Current password is required",
+                    "Error",
+                    javax.swing.JOptionPane.ERROR_MESSAGE
+                );
+                return;
+            }
+            
+            // Validate new password
+            String passwordError = DataValidator.validatePassword(newPassword.clone());
+            if (passwordError != null) {
+                javax.swing.JOptionPane.showMessageDialog(
+                    this,
+                    passwordError,
+                    "Error",
+                    javax.swing.JOptionPane.ERROR_MESSAGE
+                );
+                return;
+            }
+            
+            // Check if passwords match
+            String passwordMatchError = DataValidator.validatePasswordMatch(newPassword.clone(), confirmPassword.clone());
+            if (passwordMatchError != null) {
+                javax.swing.JOptionPane.showMessageDialog(
+                    this,
+                    passwordMatchError,
+                    "Error",
+                    javax.swing.JOptionPane.ERROR_MESSAGE
+                );
+                return;
+            }
+            
+            // Try to change password
+            boolean success = changePassword(currentPassword, newPassword, confirmPassword);
+            
+            if (success) {
+                javax.swing.JOptionPane.showMessageDialog(
+                    this,
+                    "Password changed successfully",
+                    "Success",
+                    javax.swing.JOptionPane.INFORMATION_MESSAGE
+                );
+            } else {
+                javax.swing.JOptionPane.showMessageDialog(
+                    this,
+                    "Failed to change password. Please verify your current password.",
+                    "Error",
+                    javax.swing.JOptionPane.ERROR_MESSAGE
+                );
+            }
+        }
+    }//GEN-LAST:event_changePasswordActionPerformed
 
     public void init(Main controller){
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -312,6 +414,10 @@ public class Frame extends javax.swing.JFrame {
 
         main.sqlite.addUser(username, passwordStr, Role.CLIENT, ques1, ques2); // Assuming default values for the additional arguments
 
+        // Log registration event
+        String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+        main.sqlite.addLogs("USER_REGISTER", username, "New user registered with username: " + username, timestamp);
+
         // for clearing out memory
         java.util.Arrays.fill(password, '0');
         java.util.Arrays.fill(confpass, '0');
@@ -324,7 +430,15 @@ public class Frame extends javax.swing.JFrame {
             User user = main.sqlite.getUserByUsername(username);
             if (user != null) {
                 main.setCurrentUser(user);
+                
+                // Log successful login
+                String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+                main.sqlite.addLogs("USER_LOGIN", username, "User logged in successfully", timestamp);
             }
+        } else {
+            // Log failed login attempt
+            String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+            main.sqlite.addLogs("LOGIN_FAILED", username, "Failed login attempt for username: " + username, timestamp);
         }
         
         return status;
@@ -334,6 +448,46 @@ public class Frame extends javax.swing.JFrame {
         // Check if username exists in database
         return main.sqlite.checkUsernameExists(username);
     }
+    
+    public boolean changePassword(char[] currentPassword, char[] newPassword, char[] confirmPassword) {
+        if (main.getCurrentUser() == null) {
+            return false;
+        }
+        
+        String username = main.getCurrentUser().getUsername();
+        
+        // Verify current password
+        boolean passwordVerified = main.sqlite.verifyCurrentPassword(username, currentPassword);
+        if (!passwordVerified) {
+            return false;
+        }
+        
+        // Validate new password
+        String passwordError = DataValidator.validatePassword(newPassword.clone());
+        if (passwordError != null) {
+            return false;
+        }
+        
+        // Check if passwords match
+        String passwordMatchError = DataValidator.validatePasswordMatch(newPassword.clone(), confirmPassword.clone());
+        if (passwordMatchError != null) {
+            return false;
+        }
+        
+        // Update password in database
+        main.sqlite.updatePassword(username, new String(newPassword));
+        
+        // Log password change event
+        String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+        main.sqlite.addLogs("PASSWORD_CHANGE", username, "User changed password", timestamp);
+        
+        // Clear sensitive data from memory
+        java.util.Arrays.fill(currentPassword, '0');
+        java.util.Arrays.fill(newPassword, '0');
+        java.util.Arrays.fill(confirmPassword, '0');
+        
+        return true;
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel Container;
@@ -341,6 +495,7 @@ public class Frame extends javax.swing.JFrame {
     private javax.swing.JPanel HomePnl;
     private javax.swing.JPanel Navigation;
     private javax.swing.JButton adminBtn;
+    private javax.swing.JButton changePassword;
     private javax.swing.JButton clientBtn;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JButton logoutBtn;

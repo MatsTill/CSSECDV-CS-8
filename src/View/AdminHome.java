@@ -74,16 +74,16 @@ public class AdminHome extends javax.swing.JPanel {
     
     public void showPnl(String pnl){
         switch(pnl){
-            case "user":     mgmtUser.init();
+            case "user":     mgmtUser.init(currentUser);
                              contentView.show(Content, "mgmtUser");
                              break;
-            case "history":  mgmtHistory.init(sqlite);
+            case "history":  mgmtHistory.init(sqlite, currentUser);
                              contentView.show(Content, "mgmtHistory");
                              break;
             case "product":  mgmtProduct.init(sqlite, currentUser);
                              contentView.show(Content, "mgmtProduct");
                              break;
-            case "logs":     mgmtLogs.init();
+            case "logs":     mgmtLogs.init(currentUser);
                              contentView.show(Content, "mgmtLogs");
                              break;
             default:         contentView.show(Content, "home");
@@ -163,14 +163,14 @@ public class AdminHome extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void usersBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_usersBtnActionPerformed
-        mgmtUser.init();
+        mgmtUser.init(currentUser);
         usersBtn.setForeground(Color.red);
         logsBtn.setForeground(Color.black);
         contentView.show(Content, "mgmtUser");
     }//GEN-LAST:event_usersBtnActionPerformed
 
     private void logsBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logsBtnActionPerformed
-        mgmtLogs.init();
+        mgmtLogs.init(currentUser);
         usersBtn.setForeground(Color.black);
         logsBtn.setForeground(Color.red);
         contentView.show(Content, "mgmtLogs");

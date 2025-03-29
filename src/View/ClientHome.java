@@ -161,7 +161,7 @@ public class ClientHome extends javax.swing.JPanel {
     }//GEN-LAST:event_productsBtnActionPerformed
 
     private void historyBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_historyBtnActionPerformed
-        mgmtHistory.init(sqlite);
+        mgmtHistory.init(sqlite, currentUser);
         productsBtn.setForeground(Color.black);
         historyBtn.setForeground(Color.red);
         contentView.show(Content, "mgmtHistory");

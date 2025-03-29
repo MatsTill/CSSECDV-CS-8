@@ -191,7 +191,7 @@ public class Login extends javax.swing.JPanel {
         );
 
         add(jPanel1);
-        jPanel1.setBounds(150, 42, 389, 416);
+        jPanel1.setBounds(150, 42, 390, 450);
     }// </editor-fold>//GEN-END:initComponents
     private void loginBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loginBtnActionPerformed
         String username = usernameFld.getText();

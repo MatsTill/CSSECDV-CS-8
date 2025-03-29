@@ -8,6 +8,8 @@ package View;
 import Controller.SQLite;
 import Model.History;
 import Model.Product;
+import Model.User;
+import Model.Role;
 import java.util.ArrayList;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
@@ -21,6 +23,7 @@ public class MgmtHistory extends javax.swing.JPanel {
 
     public SQLite sqlite;
     public DefaultTableModel tableModel;
+    private User currentUser;
     
     public MgmtHistory(SQLite sqlite) {
         initComponents();
@@ -41,7 +44,27 @@ public class MgmtHistory extends javax.swing.JPanel {
 
     public void init(SQLite sqlite){
         this.sqlite = sqlite;
+        loadAllHistory();
+    }
+    
+    public void init(SQLite sqlite, User user){
+        this.sqlite = sqlite;
+        this.currentUser = user;
         
+        if (user != null && user.getRole() == Role.CLIENT) {
+            // For client users, only show their own history
+            loadUserHistory(user.getUsername());
+            
+            // Clients should not be able to search for other users' history
+            searchBtn.setVisible(false);
+        } else {
+            // Admin, Manager, and Staff can see all history
+            loadAllHistory();
+            searchBtn.setVisible(true);
+        }
+    }
+    
+    private void loadAllHistory() {
         // CLEAR TABLE
         for(int nCtr = tableModel.getRowCount(); nCtr > 0; nCtr--){
             tableModel.removeRow(0);
@@ -62,8 +85,7 @@ public class MgmtHistory extends javax.swing.JPanel {
         }
     }
     
-    // Keep the no-parameter version for backward compatibility
-    public void init(){
+    private void loadUserHistory(String username) {
         // CLEAR TABLE
         for(int nCtr = tableModel.getRowCount(); nCtr > 0; nCtr--){
             tableModel.removeRow(0);
@@ -72,15 +94,26 @@ public class MgmtHistory extends javax.swing.JPanel {
         // LOAD CONTENTS
         ArrayList<History> history = sqlite.getHistory();
         for(int nCtr = 0; nCtr < history.size(); nCtr++){
-            Product product = sqlite.getProduct(history.get(nCtr).getName());
-            tableModel.addRow(new Object[]{
-                history.get(nCtr).getUsername(), 
-                history.get(nCtr).getName(), 
-                history.get(nCtr).getStock(), 
-                product.getPrice(), 
-                product.getPrice() * history.get(nCtr).getStock(), 
-                history.get(nCtr).getTimestamp()
-            });
+            if (history.get(nCtr).getUsername().equals(username)) {
+                Product product = sqlite.getProduct(history.get(nCtr).getName());
+                tableModel.addRow(new Object[]{
+                    history.get(nCtr).getUsername(), 
+                    history.get(nCtr).getName(), 
+                    history.get(nCtr).getStock(), 
+                    product.getPrice(), 
+                    product.getPrice() * history.get(nCtr).getStock(), 
+                    history.get(nCtr).getTimestamp()
+                });
+            }
+        }
+    }
+    
+    // Keep the no-parameter version for backward compatibility
+    public void init(){
+        if (currentUser != null && currentUser.getRole() == Role.CLIENT) {
+            loadUserHistory(currentUser.getUsername());
+        } else {
+            loadAllHistory();
         }
     }
     
@@ -183,7 +216,7 @@ public class MgmtHistory extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void searchBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_searchBtnActionPerformed
-        JTextField searchFld = new JTextField("0");
+        JTextField searchFld = new JTextField("");
         designer(searchFld, "SEARCH USERNAME OR PRODUCT");
 
         Object[] message = {
@@ -193,18 +226,26 @@ public class MgmtHistory extends javax.swing.JPanel {
         int result = JOptionPane.showConfirmDialog(null, message, "SEARCH HISTORY", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null);
 
         if (result == JOptionPane.OK_OPTION) {
-//          CLEAR TABLE
+            // CLEAR TABLE
             for(int nCtr = tableModel.getRowCount(); nCtr > 0; nCtr--){
                 tableModel.removeRow(0);
             }
 
-//          LOAD CONTENTS
+            // LOAD CONTENTS
             ArrayList<History> history = sqlite.getHistory();
             for(int nCtr = 0; nCtr < history.size(); nCtr++){
-                if(searchFld.getText().contains(history.get(nCtr).getUsername()) || 
-                   history.get(nCtr).getUsername().contains(searchFld.getText()) || 
-                   searchFld.getText().contains(history.get(nCtr).getName()) || 
-                   history.get(nCtr).getName().contains(searchFld.getText())){
+                // If user is client, only show their history
+                if (currentUser != null && currentUser.getRole() == Role.CLIENT) {
+                    if (!history.get(nCtr).getUsername().equals(currentUser.getUsername())) {
+                        continue; // Skip entries that don't belong to this client
+                    }
+                }
+                
+                if(searchFld.getText().isEmpty() || 
+                   searchFld.getText().toLowerCase().contains(history.get(nCtr).getUsername().toLowerCase()) || 
+                   history.get(nCtr).getUsername().toLowerCase().contains(searchFld.getText().toLowerCase()) || 
+                   searchFld.getText().toLowerCase().contains(history.get(nCtr).getName().toLowerCase()) || 
+                   history.get(nCtr).getName().toLowerCase().contains(searchFld.getText().toLowerCase())){
                 
                     Product product = sqlite.getProduct(history.get(nCtr).getName());
                     tableModel.addRow(new Object[]{
