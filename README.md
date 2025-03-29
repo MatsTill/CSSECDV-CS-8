@@ -2,7 +2,6 @@
 
 # Passwords:
 
-Sophia Elen Perez
 admin: qwerty1234 | Blue, SPCP
 manager: qwerty1234 | Smith, CSA
 staff: qwerty1234 | Buddy, LSM
