@@ -27,25 +27,25 @@ public class Main {
         sqlite = new SQLite();
         sessionManager = new SessionManager(sqlite);
 
-        sqlite.createNewDatabase();
+        sqlite.createNewDatabase(); // Connect to db
        
         // Drop users table if needed
-        sqlite.dropHistoryTable();
-        sqlite.dropLogsTable();
-        sqlite.dropProductTable();
-        sqlite.dropUserTable();
+        // sqlite.dropHistoryTable();
+        // sqlite.dropLogsTable();
+        // sqlite.dropProductTable();
+        // sqlite.dropUserTable();
        
         // Create users table if not exist
-        sqlite.createHistoryTable();
-        sqlite.createLogsTable();
-        sqlite.createProductTable();
-        sqlite.createUserTable();
+        // sqlite.createHistoryTable();
+        // sqlite.createLogsTable();
+        // sqlite.createProductTable();
+        // sqlite.createUserTable();
 
-        sqlite.addUser("admin", "qwerty1234", 5, "Blue", "SPCP");
-        sqlite.addUser("manager", "qwerty1234", 4, "Smith", "CSA");
-        sqlite.addUser("staff", "qwerty1234", 3, "Buddy", "LSM");
-        sqlite.addUser("client1", "qwerty1234", 2, "Tilly", "Don Bosco");
-        sqlite.addUser("client2", "qwerty1234", 2, "Angel", "DLSU");
+        // sqlite.addUser("admin", "qwerty1234", 5, "Blue", "SPCP");
+        // sqlite.addUser("manager", "qwerty1234", 4, "Smith", "CSA");
+        // sqlite.addUser("staff", "qwerty1234", 3, "Buddy", "LSM");
+        // sqlite.addUser("client1", "qwerty1234", 2, "Tilly", "Don Bosco");
+        // sqlite.addUser("client2", "qwerty1234", 2, "Angel", "DLSU");
         
         // Initialize User Interface
         Frame frame = new Frame();
