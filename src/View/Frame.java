@@ -278,9 +278,9 @@ public class Frame extends javax.swing.JFrame {
         
         // Show appropriate UI elements based on role
         adminBtn.setVisible(role == Role.ADMIN);
-        managerBtn.setVisible(role == Role.MANAGER || role == Role.ADMIN);
-        staffBtn.setVisible(role == Role.STAFF || role == Role.MANAGER || role == Role.ADMIN);
-        clientBtn.setVisible(role == Role.CLIENT || role == Role.MANAGER || role == Role.ADMIN);
+        managerBtn.setVisible(role == Role.MANAGER);
+        staffBtn.setVisible(role == Role.STAFF);
+        clientBtn.setVisible(role == Role.CLIENT);
         
         frameView.show(Container, "homePnl");
         
@@ -288,10 +288,10 @@ public class Frame extends javax.swing.JFrame {
         if (role == Role.ADMIN) {
             adminHomePnl.showPnl("home");
             contentView.show(Content, "adminHomePnl");
-        } else if (role == Role.MANAGER || role == Role.ADMIN) {
+        } else if (role == Role.MANAGER) {
             managerHomePnl.showPnl("home");
             contentView.show(Content, "managerHomePnl");
-        } else if (role == Role.STAFF || role == Role.MANAGER || role == Role.ADMIN) {
+        } else if (role == Role.STAFF) {
             staffHomePnl.showPnl("home");
             contentView.show(Content, "staffHomePnl");
         } else {
