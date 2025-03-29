@@ -72,24 +72,24 @@ public class Main {
         sessionManager = new SessionManager(sqlite);
        
         // Drop tables if needed (comment these out in production)
-        sqlite.dropHistoryTable();
-        sqlite.dropLogsTable();
-        sqlite.dropProductTable();
-        sqlite.dropUserTable();
+        // sqlite.dropHistoryTable();
+        // sqlite.dropLogsTable();
+        // sqlite.dropProductTable();
+        // sqlite.dropUserTable();
        
-        // Create tables if not exist
-        sqlite.createHistoryTable();
-        sqlite.createLogsTable();
-        sqlite.createProductTable();
-        sqlite.createUserTable();
+        // // Create tables if not exist
+        // sqlite.createHistoryTable();
+        // sqlite.createLogsTable();
+        // sqlite.createProductTable();
+        // sqlite.createUserTable();
 
-        // Add sample users with different roles using Role enum
-        sqlite.addUser("admin", "qwerty1234", Role.ADMIN, "Blue", "SPCP");
-        sqlite.addUser("manager", "qwerty1234", Role.MANAGER, "Smith", "CSA");
-        sqlite.addUser("staff", "qwerty1234", Role.STAFF, "Buddy", "LSM");
-        sqlite.addUser("client1", "qwerty1234", Role.CLIENT, "Tilly", "Don Bosco");
-        sqlite.addUser("client2", "qwerty1234", Role.CLIENT, "Angel", "DLSU");
-        sqlite.addUser("disabled", "qwerty1234", Role.DISABLED, "Locked", "Account");
+        // // Add sample users with different roles using Role enum
+        // sqlite.addUser("admin", "qwerty1234", Role.ADMIN, "Blue", "SPCP");
+        // sqlite.addUser("manager", "qwerty1234", Role.MANAGER, "Smith", "CSA");
+        // sqlite.addUser("staff", "qwerty1234", Role.STAFF, "Buddy", "LSM");
+        // sqlite.addUser("client1", "qwerty1234", Role.CLIENT, "Tilly", "Don Bosco");
+        // sqlite.addUser("client2", "qwerty1234", Role.CLIENT, "Angel", "DLSU");
+        // sqlite.addUser("disabled", "qwerty1234", Role.DISABLED, "Locked", "Account");
         
         // Initialize User Interface
         Frame frame = new Frame();
