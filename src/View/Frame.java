@@ -1,19 +1,18 @@
 package View;
 
 import Controller.Main;
-import Model.Role;
-import Model.User;
 import Controller.AuthStatus;
 import Model.User;
-
-import javax.swing.*;
-import javax.swing.text.AbstractDocument.Content;
-
-import java.awt.*;
+import Model.Role;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Dimension;
+import javax.swing.JOptionPane;
+import javax.swing.WindowConstants;
 
 public class Frame extends javax.swing.JFrame {
 
-    public Main main;
+    private Main main;
     private User currentUser;
     public Login loginPnl = new Login();
     public Register registerPnl = new Register();
@@ -198,168 +197,101 @@ public class Frame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void adminBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_adminBtnActionPerformed
-        if (currentUser != null && currentUser.getRole() == Role.ADMIN) {
+        if (currentUser != null && currentUser.getRole() == Role.ADMIN) {   
             adminHomePnl.showPnl("home");
             contentView.show(Content, "adminHomePnl");
+        } else {
+            JOptionPane.showMessageDialog(this, "Access Denied: You do not have permission to access this page.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_adminBtnActionPerformed
 
     private void managerBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_managerBtnActionPerformed
-        if (currentUser != null && (currentUser.getRole() == Role.MANAGER || currentUser.getRole() == Role.ADMIN)) {
+        if (currentUser != null && (currentUser.getRole() == Role.MANAGER || currentUser.getRole() == Role.ADMIN)) {   
             managerHomePnl.showPnl("home");
             contentView.show(Content, "managerHomePnl");
+        } else {
+            JOptionPane.showMessageDialog(this, "Access Denied: You do not have permission to access this page.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_managerBtnActionPerformed
 
     private void staffBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_staffBtnActionPerformed
-        if (currentUser != null && (currentUser.getRole() == Role.STAFF || currentUser.getRole() == Role.MANAGER || currentUser.getRole() == Role.ADMIN)) {
+        if (currentUser != null && (currentUser.getRole() == Role.STAFF || currentUser.getRole() == Role.MANAGER || currentUser.getRole() == Role.ADMIN)) {   
             staffHomePnl.showPnl("home");
             contentView.show(Content, "staffHomePnl");
+        } else {
+            JOptionPane.showMessageDialog(this, "Access Denied: You do not have permission to access this page.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_staffBtnActionPerformed
 
     private void clientBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clientBtnActionPerformed
-        if (currentUser != null && (currentUser.getRole() == Role.CLIENT || currentUser.getRole() == Role.STAFF || currentUser.getRole() == Role.MANAGER || currentUser.getRole() == Role.ADMIN)) {
+        if (currentUser != null && (currentUser.getRole() == Role.CLIENT || currentUser.getRole() == Role.MANAGER || currentUser.getRole() == Role.ADMIN)) {   
             clientHomePnl.showPnl("home");
             contentView.show(Content, "clientHomePnl");
+        } else {
+            JOptionPane.showMessageDialog(this, "Access Denied: You do not have permission to access this page.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_clientBtnActionPerformed
 
-    private void logoutBtnActionPerformed(java.awt.event.ActionEvent evt) {
-        // Logout the user
-        main.sqlite.logout();
-        
-        // Return to login screen
+    private void logoutBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutBtnActionPerformed
+        main.logout();
         frameView.show(Container, "loginPnl");
-    }
+    }//GEN-LAST:event_logoutBtnActionPerformed
 
-    public void init(Main controller) {
+    
+    public void init(Main controller){
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         this.setTitle("CSSECDV - SECURITY Svcs");
         this.setLocationRelativeTo(null);
-
+        
         this.main = controller;
         loginPnl.frame = this;
         registerPnl.frame = this;
-
+        
         adminHomePnl.init(main.sqlite);
         clientHomePnl.init(main.sqlite);
         managerHomePnl.init(main.sqlite);
         staffHomePnl.init(main.sqlite);
-
+        
         Container.setLayout(frameView);
         Container.add(loginPnl, "loginPnl");
         Container.add(registerPnl, "registerPnl");
         Container.add(HomePnl, "homePnl");
         frameView.show(Container, "loginPnl");
-
+        
         Content.setLayout(contentView);
         Content.add(adminHomePnl, "adminHomePnl");
         Content.add(managerHomePnl, "managerHomePnl");
         Content.add(staffHomePnl, "staffHomePnl");
         Content.add(clientHomePnl, "clientHomePnl");
-
+        
         this.setVisible(true);
     }
-
-    public void setCurrentUser(User user) {
-        this.currentUser = user;
-
-        // Hide all buttons initially
-        adminBtn.setVisible(false);
-        managerBtn.setVisible(false);
-        staffBtn.setVisible(false);
-        clientBtn.setVisible(false);
-
-        // Set button visibility and show the appropriate home page based on user role
-        if (currentUser != null) {
-            Role role = currentUser.getRole();
-            System.out.println("Current user role: " + role); // Debug statement
-            switch (role) {
-                case ADMIN:
-                    adminBtn.setVisible(true);
-                    contentView.show(Content, "adminHomePnl");
-                    break;
-                case MANAGER:
-                    managerBtn.setVisible(true);
-                    contentView.show(Content, "managerHomePnl");
-                    break;
-                case STAFF:
-                    staffBtn.setVisible(true);
-                    contentView.show(Content, "staffHomePnl");
-                    break;
-                case CLIENT:
-                    clientBtn.setVisible(true);
-                    contentView.show(Content, "clientHomePnl");
-                    break;
-                default:
-                    // No buttons visible for other roles
-                    break;
-            }
-        }
-    }
-
-    public AuthStatus loginAction(String username, char[] password) {
-        // Authenticate the user
-        AuthStatus status = main.sqlite.authenticate(username, password);
-        
-        if (status == AuthStatus.SUCCESS) {
-            User user = main.sqlite.getCurrentUser();
-            if (user != null) {
-                // Create a session for the user
-                String sessionId = main.sessionManager.createSession(user);
-                user.setSessionId(sessionId);
-                
-                // Store user in both SQLite and Main session management
-                main.sqlite.setCurrentUser(user);
-                main.setCurrentUser(user);
-                
-                // Update UI and navigate to the home page
-                setCurrentUser(user);
-                updateUIBasedOnRole();
-                mainNav();
-            }
-        }
-        
-        return status;
-    }
-
-    private void updateUIBasedOnRole() {
-        User currentUser = main.sqlite.getCurrentUser();
-        if (currentUser == null) {
-            return;
-        }
-        
-        Role role = currentUser.getRole();
-        
-        // Configure UI based on role
-        adminBtn.setVisible(role == Role.ADMIN);
-        managerBtn.setVisible(role == Role.ADMIN || role == Role.MANAGER);
-        staffBtn.setVisible(role == Role.ADMIN || role == Role.MANAGER || role == Role.STAFF);
-        clientBtn.setVisible(role == Role.ADMIN || role == Role.MANAGER || role == Role.STAFF || role == Role.CLIENT);
-    }
-
-    public void mainNav() {
-        if (main.sqlite.getCurrentUser() == null) {
+    
+    public void mainNav(){
+        if (!main.isUserAuthenticated()) {
             frameView.show(Container, "loginPnl");
             return;
         }
         
-        // Update UI elements based on role
-        updateUIBasedOnRole();
+        User user = main.getCurrentUser();
+        Role role = user.getRole();
         
-        // Navigate to appropriate home panel based on role
-        User currentUser = main.sqlite.getCurrentUser();
-        Role userRole = currentUser.getRole();
+        // Show appropriate UI elements based on role
+        adminBtn.setVisible(role == Role.ADMIN);
+        managerBtn.setVisible(role == Role.MANAGER || role == Role.ADMIN);
+        staffBtn.setVisible(role == Role.STAFF || role == Role.MANAGER || role == Role.ADMIN);
+        clientBtn.setVisible(role == Role.CLIENT || role == Role.MANAGER || role == Role.ADMIN);
+        
         frameView.show(Container, "homePnl");
         
-        if (userRole == Role.ADMIN) {
+        // Direct to appropriate home panel based on role
+        if (role == Role.ADMIN) {
             adminHomePnl.showPnl("home");
             contentView.show(Content, "adminHomePnl");
-        } else if (userRole == Role.MANAGER) {
+        } else if (role == Role.MANAGER || role == Role.ADMIN) {
             managerHomePnl.showPnl("home");
             contentView.show(Content, "managerHomePnl");
-        } else if (userRole == Role.STAFF) {
+        } else if (role == Role.STAFF || role == Role.MANAGER || role == Role.ADMIN) {
             staffHomePnl.showPnl("home");
             contentView.show(Content, "staffHomePnl");
         } else {
@@ -367,25 +299,36 @@ public class Frame extends javax.swing.JFrame {
             contentView.show(Content, "clientHomePnl");
         }
     }
-
-    public void loginNav() {
+    
+    public void loginNav(){
         frameView.show(Container, "loginPnl");
     }
-
-    public void registerNav() {
+    
+    public void registerNav(){
         frameView.show(Container, "registerPnl");
     }
-
-    public void registerAction(String username, char[] password, char[] confpass, String ques1, String ques2) {
+    
+    public void registerAction(String username, char[] password, char[] confpass, String ques1, String ques2){
         String passwordStr = new String(password);
 
-        // Use Role.CLIENT directly instead of role value 2
-        Role clientRole = Role.CLIENT;
-        main.sqlite.addUser(username, passwordStr, clientRole, ques1, ques2);
+        main.sqlite.addUser(username, passwordStr, Role.CLIENT, ques1, ques2); // Assuming default values for the additional arguments
 
         // for clearing out memory
         java.util.Arrays.fill(password, '0');
         java.util.Arrays.fill(confpass, '0');
+    }
+
+    public AuthStatus loginAction(String username, char[] password) {
+        AuthStatus status = main.sqlite.authenticate(username, password);
+        
+        if (status == AuthStatus.SUCCESS) {
+            User user = main.sqlite.getUserByUsername(username);
+            if (user != null) {
+                main.setCurrentUser(user);
+            }
+        }
+        
+        return status;
     }
 
     public boolean isUsernameTaken(String username) {

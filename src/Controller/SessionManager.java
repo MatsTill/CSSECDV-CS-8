@@ -1,171 +1,166 @@
 package Controller;
 
 import Model.User;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.Base64;
-import java.util.Properties;
+import java.util.HashMap;
+import java.util.Map;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class SessionManager {
-    private static final long SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-    private static final String SESSION_FOLDER = "sessions";
+    private static final long SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
+    private static final SecureRandom secureRandom = new SecureRandom();
+    private static final Base64.Encoder base64Encoder = Base64.getUrlEncoder();
+    
+    private Map<String, User> activeSessions = new HashMap<>();
     private SQLite sqlite;
+    
+    private static final String SESSION_FILE = "session.dat";
     
     public SessionManager(SQLite sqlite) {
         this.sqlite = sqlite;
-        // Ensure sessions directory exists
-        File dir = new File(SESSION_FOLDER);
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
     }
     
-    /**
-     * Creates a new session for the user
-     */
     public String createSession(User user) {
-        // Generate a secure random session ID
-        SecureRandom random = new SecureRandom();
-        byte[] sessionBytes = new byte[32];
-        random.nextBytes(sessionBytes);
-        String sessionId = Base64.getEncoder().encodeToString(sessionBytes)
-                .replaceAll("\\+", "-")
-                .replaceAll("/", "_")
-                .replaceAll("=", "");
+        // Generate a random session ID
+        String sessionId = generateSessionId();
         
-        // Set session expiry
-        long expiry = System.currentTimeMillis() + SESSION_DURATION;
+        // Set session expiry time
+        long expiryTime = System.currentTimeMillis() + SESSION_TIMEOUT;
         
-        // Update user object
+        // Update user with session info
         user.setSessionId(sessionId);
-        user.setSessionExpiry(expiry);
+        user.setSessionExpiry(expiryTime);
         
-        // Save session to database
-        sqlite.updateUserSession(user);
+        // Store in database
+        updateUserSession(user);
         
-        // Save session to file for persistence
+        // Add to in-memory cache
+        activeSessions.put(sessionId, user);
+        
+        // Save session to file
         saveSessionToFile(user.getUsername(), sessionId);
         
         return sessionId;
     }
     
-    /**
-     * Validates if a session is still active
-     */
-    public boolean validateSession(String sessionId) {
+    public User getUserBySessionId(String sessionId) {
         if (sessionId == null || sessionId.isEmpty()) {
-            return false;
+            return null;
         }
         
-        User user = sqlite.getUserBySessionId(sessionId);
+        // Check in-memory cache first
+        User user = activeSessions.get(sessionId);
+        
         if (user == null) {
-            return false;
+            // If not in cache, try database
+            user = sqlite.getUserBySessionId(sessionId);
+            if (user != null) {
+                activeSessions.put(sessionId, user);
+            }
         }
         
-        // Check if session is expired
-        if (user.getSessionExpiry() < System.currentTimeMillis()) {
-            // Clear expired session
+        if (user != null && isSessionValid(user)) {
+            // Extend session if valid
+            extendSession(user);
+            return user;
+        } else if (user != null) {
+            // Invalidate expired session
             invalidateSession(sessionId);
-            return false;
+            return null;
         }
         
-        return true;
+        return null;
     }
     
-    /**
-     * Invalidates (clears) a session
-     */
+    public boolean isSessionValid(User user) {
+        return user != null && user.isSessionValid();
+    }
+    
+    public void extendSession(User user) {
+        if (user != null && user.getSessionId() != null) {
+            // Extend session timeout
+            long newExpiry = System.currentTimeMillis() + SESSION_TIMEOUT;
+            user.setSessionExpiry(newExpiry);
+            updateUserSession(user);
+        }
+    }
+    
     public void invalidateSession(String sessionId) {
-        if (sessionId == null || sessionId.isEmpty()) {
-            return;
+        if (sessionId != null) {
+            User user = activeSessions.get(sessionId);
+            if (user != null) {
+                deleteSessionFile(user.getUsername());
+            }
+            
+            activeSessions.remove(sessionId);
+            sqlite.clearUserSession(sessionId);
         }
-        
-        // Get user by session first
-        User user = sqlite.getUserBySessionId(sessionId);
-        if (user != null) {
-            // Delete session file
-            deleteSessionFile(user.getUsername());
-        }
-        
-        // Clear session in database
-        sqlite.clearUserSession(sessionId);
     }
     
-    /**
-     * Invalidates all sessions for a user
-     */
     public void invalidateUserSessions(String username) {
-        if (username == null || username.isEmpty()) {
-            return;
+        if (username != null) {
+            // Remove from in-memory cache
+            activeSessions.entrySet().removeIf(entry -> 
+                entry.getValue().getUsername().equals(username));
+            
+            // Clear from database
+            sqlite.clearUserSessionsByUsername(username);
+            
+            // Delete session file
+            deleteSessionFile(username);
         }
-        
-        // Delete session file
-        deleteSessionFile(username);
-        
-        // Clear sessions in database
-        sqlite.clearUserSessionsByUsername(username);
     }
     
-    /**
-     * Save session to file for persistence across restarts
-     */
+    private String generateSessionId() {
+        byte[] randomBytes = new byte[32];
+        secureRandom.nextBytes(randomBytes);
+        return base64Encoder.encodeToString(randomBytes);
+    }
+    
+    private void updateUserSession(User user) {
+        sqlite.updateUserSession(user);
+    }
+    
     private void saveSessionToFile(String username, String sessionId) {
-        if (username == null || sessionId == null || username.isEmpty() || sessionId.isEmpty()) {
-            return;
-        }
-        
-        Properties props = new Properties();
-        props.setProperty("sessionId", sessionId);
-        
         try {
-            File file = new File(SESSION_FOLDER + File.separator + username + ".session");
-            try (FileOutputStream fos = new FileOutputStream(file)) {
-                props.store(fos, "Session data for " + username);
+            File file = new File(username + "_" + SESSION_FILE);
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+                writer.write(sessionId);
             }
         } catch (IOException e) {
             System.err.println("Error saving session: " + e.getMessage());
         }
     }
     
-    /**
-     * Load session from file
-     */
     public String loadSessionFromFile(String username) {
-        if (username == null || username.isEmpty()) {
-            return null;
-        }
-        
-        String sessionFile = SESSION_FOLDER + File.separator + username + ".session";
-        if (!Files.exists(Paths.get(sessionFile))) {
-            return null;
-        }
-        
-        Properties props = new Properties();
-        try (FileReader reader = new FileReader(sessionFile)) {
-            props.load(reader);
-            return props.getProperty("sessionId");
+        try {
+            File file = new File(username + "_" + SESSION_FILE);
+            if (file.exists()) {
+                try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                    return reader.readLine();
+                }
+            }
         } catch (IOException e) {
             System.err.println("Error loading session: " + e.getMessage());
-            return null;
         }
+        return null;
     }
     
-    /**
-     * Delete session file
-     */
     private void deleteSessionFile(String username) {
-        if (username == null || username.isEmpty()) {
-            return;
-        }
-        
         try {
-            Files.deleteIfExists(Paths.get(SESSION_FOLDER + File.separator + username + ".session"));
-        } catch (IOException e) {
+            File file = new File(username + "_" + SESSION_FILE);
+            if (file.exists()) {
+                if (!file.delete()) {
+                    System.err.println("Failed to delete session file for user: " + username);
+                }
+            }
+        } catch (Exception e) {
             System.err.println("Error deleting session file: " + e.getMessage());
         }
     }

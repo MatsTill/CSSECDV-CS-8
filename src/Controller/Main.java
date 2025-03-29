@@ -1,20 +1,57 @@
 package Controller;
 
+
 import Model.History;
 import Model.Logs;
 import Model.Product;
-import Model.Role;
 import Model.User;
+import Model.Role;
 import View.Frame;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 
+
+
 public class Main {
     
     public SQLite sqlite;
     public SessionManager sessionManager;
-    private User currentUser = null;
+    private User currentUser;
+    
+    public static void main(String[] args) {
+        new Main().init();
+    }
+    
+    public void init(){
+        // Initialize a driver object
+        sqlite = new SQLite();
+        sessionManager = new SessionManager(sqlite);
+
+        sqlite.createNewDatabase(); // Connect to db
+       
+        // Drop users table if needed
+        sqlite.dropHistoryTable();
+        sqlite.dropLogsTable();
+        sqlite.dropProductTable();
+        sqlite.dropUserTable();
+       
+        // Create users table if not exist
+        sqlite.createHistoryTable();
+        sqlite.createLogsTable();
+        sqlite.createProductTable();
+        sqlite.createUserTable();
+
+        sqlite.addUser("admin", "qwerty1234", Role.ADMIN, "Blue", "SPCP");
+        sqlite.addUser("manager", "qwerty1234", Role.MANAGER, "Smith", "CSA");
+        sqlite.addUser("staff", "qwerty1234", Role.STAFF, "Buddy", "LSM");
+        sqlite.addUser("client1", "qwerty1234", Role.CLIENT, "Tilly", "Don Bosco");
+        sqlite.addUser("client2", "qwerty1234", Role.CLIENT, "Angel", "DLSU");
+
+        // Initialize User Interface
+        Frame frame = new Frame();
+        frame.init(this);
+    }
     
     public User getCurrentUser() {
         return currentUser;
@@ -22,81 +59,41 @@ public class Main {
     
     public void setCurrentUser(User user) {
         this.currentUser = user;
+        if (user != null) {
+            sessionManager.createSession(user);
+        }
     }
     
     public void logout() {
-        if (currentUser != null && currentUser.getSessionId() != null) {
-            sessionManager.invalidateSession(currentUser.getSessionId());
+        if (currentUser != null) {
+            sessionManager.invalidateUserSessions(currentUser.getUsername());
+            currentUser = null;
         }
-        currentUser = null;
-        sqlite.logout();
     }
     
     public boolean isUserAuthenticated() {
-        return currentUser != null;
+        return currentUser != null && sessionManager.isSessionValid(currentUser);
     }
     
-    public boolean hasRole(Role requiredRole) {
-        if (currentUser == null) {
+    // public boolean hasRole(Role requiredRole) {
+    //     return isUserAuthenticated() && currentUser.getRole() == requiredRole;
+    // }
+    
+    public boolean tryRestoreSession(String sessionId) {
+        if (sessionId == null || sessionId.isEmpty()) {
             return false;
         }
         
-        // Compare enum ordinal values for proper role hierarchical check
-        return currentUser.getRole().ordinal() >= requiredRole.ordinal();
-    }
-    
-    public boolean tryRestoreSession(String sessionId) {
-        if (sessionId != null && !sessionId.isEmpty()) {
-            if (sessionManager.validateSession(sessionId)) {
-                User user = sqlite.getUserBySessionId(sessionId);
-                if (user != null) {
-                    setCurrentUser(user);
-                    sqlite.setCurrentUser(user);
-                    return true;
-                }
-            }
+        User user = sessionManager.getUserBySessionId(sessionId);
+        if (user != null) {
+            currentUser = user;
+            return true;
         }
+        
         return false;
     }
-    
-    public static void main(String[] args) {
-        new Main().init();
-    }
-    
-    public void init(){
-        // Initialize SQLite database
-        sqlite = new SQLite();
-        sqlite.createNewDatabase();
-       
-        // Initialize SessionManager
-        sessionManager = new SessionManager(sqlite);
-       
-        // Drop tables if needed (comment these out in production)
-        // sqlite.dropHistoryTable();
-        // sqlite.dropLogsTable();
-        // sqlite.dropProductTable();
-        // sqlite.dropUserTable();
-       
-        // // Create tables if not exist
-        // sqlite.createHistoryTable();
-        // sqlite.createLogsTable();
-        // sqlite.createProductTable();
-        // sqlite.createUserTable();
 
-        // // Add sample users with different roles using Role enum
-        // sqlite.addUser("admin", "qwerty1234", Role.ADMIN, "Blue", "SPCP");
-        // sqlite.addUser("manager", "qwerty1234", Role.MANAGER, "Smith", "CSA");
-        // sqlite.addUser("staff", "qwerty1234", Role.STAFF, "Buddy", "LSM");
-        // sqlite.addUser("client1", "qwerty1234", Role.CLIENT, "Tilly", "Don Bosco");
-        // sqlite.addUser("client2", "qwerty1234", Role.CLIENT, "Angel", "DLSU");
-        // sqlite.addUser("disabled", "qwerty1234", Role.DISABLED, "Locked", "Account");
-        
-        // Initialize User Interface
-        Frame frame = new Frame();
-        frame.init(this);
-    }
-    
-    public void purchaseProduct(User user, Product product) {
+public void purchaseProduct(User user, Product product) {
         if (AuthorizeRole.canPurchase(user)) {
             // Logic to purchase product
         } else {
@@ -135,4 +132,5 @@ public class Main {
             System.out.println("Access Denied: You do not have permission to manage logs.");
         }
     }
+    
 }

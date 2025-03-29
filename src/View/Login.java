@@ -7,10 +7,6 @@ import View.ValidationUtils;
 import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
-import Model.User;
-
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
 
 public class Login extends javax.swing.JPanel {
 
@@ -197,7 +193,7 @@ public class Login extends javax.swing.JPanel {
         add(jPanel1);
         jPanel1.setBounds(150, 42, 389, 416);
     }// </editor-fold>//GEN-END:initComponents
-    private void loginBtnActionPerformed(java.awt.event.ActionEvent evt) {
+    private void loginBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loginBtnActionPerformed
         String username = usernameFld.getText();
         char[] password = passwordFld.getPassword();
 
@@ -214,46 +210,40 @@ public class Login extends javax.swing.JPanel {
             return;
         }
         
-        // Check if account is locked
         SQLite sqlite = new SQLite();
         if (sqlite.isAccountLocked(username)) {
             showErrorMessage("This account is locked. Please contact an administrator.");
             return;
         }
 
-        // Attempt authentication
         AuthStatus status = frame.loginAction(username, password);
 
         switch (status) {
             case SUCCESS:
-                // Navigate to appropriate home based on role
+                sqlite.unlockAccount(username);
                 frame.mainNav();
                 break;
-            
             case ACCOUNT_LOCKED:
                 showErrorMessage("This account is locked. Please contact an administrator.");
                 break;
-            
             case INVALID_CREDENTIALS:
-                // Record failed attempt and check if account should be locked
                 sqlite.recordFailedAttempt(username);
                 if (sqlite.getFailedAttempts(username) >= 3) {
                     sqlite.lockAccount(username);
                     showErrorMessage("Too many failed attempts. Account is locked.");
                 } else {
-                    int attemptsLeft = 3 - sqlite.getFailedAttempts(username);
-                    showErrorMessage("Invalid username or password. " + attemptsLeft + " attempts remaining.");
+                    showErrorMessage("Invalid username or password");
                 }
                 break;
-            
             case SYSTEM_ERROR:
                 showErrorMessage("An error occurred. Please try again later.");
                 break;
         }
         
-        // Clear passwords after attempt
+        // Clear passwords after failure
         passwordFld.setText("");
-    }
+    
+    }//GEN-LAST:event_loginBtnActionPerformed
 
     private void registerBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_registerBtnActionPerformed
        
@@ -336,36 +326,36 @@ public class Login extends javax.swing.JPanel {
     private javax.swing.JTextField usernameFld;
     // End of variables declaration//GEN-END:variables
 
-    // This will be called when the login panel becomes visible
-    public void checkSavedSession() {
-        if (hasTriedSessionRestore) {
-            return;
-        }
+    // // This will be called when the login panel becomes visible
+    // public void checkSavedSession() {
+    //     if (hasTriedSessionRestore) {
+    //         return;
+    //     }
         
-        hasTriedSessionRestore = true;
+    //     hasTriedSessionRestore = true;
         
-        // For each user that has recently logged in, try to restore their session
-        String[] usernames = {"admin", "manager", "staff", "client1", "client2"};
+    //     // For each user that has recently logged in, try to restore their session
+    //     String[] usernames = {"admin", "manager", "staff", "client1", "client2"};
         
-        for (String username : usernames) {
-            String sessionId = frame.main.sessionManager.loadSessionFromFile(username);
-            if (sessionId != null && !sessionId.isEmpty()) {
-                if (frame.main.tryRestoreSession(sessionId)) {
-                    frame.mainNav();
-                    return;
-                }
-            }
-        }
-    }
+    //     for (String username : usernames) {
+    //         String sessionId = frame.main.sessionManager.loadSessionFromFile(username);
+    //         if (sessionId != null && !sessionId.isEmpty()) {
+    //             if (frame.main.tryRestoreSession(sessionId)) {
+    //                 frame.mainNav();
+    //                 return;
+    //             }
+    //         }
+    //     }
+    // }
     
-    @Override
-    public void addNotify() {
-        super.addNotify();
-        // This gets called when the component is added to a container (becomes visible)
-        if (frame != null && frame.main != null) {
-            checkSavedSession();
-        }
-    }
+    // @Override
+    // public void addNotify() {
+    //     super.addNotify();
+    //     // This gets called when the component is added to a container (becomes visible)
+    //     if (frame != null && frame.main != null) {
+    //         checkSavedSession();
+    //     }
+    // }
 
     private void setupValidation() {
         ValidationUtils.applyUsernameFilter(usernameFld, 20);
