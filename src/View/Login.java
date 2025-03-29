@@ -22,6 +22,7 @@ public class Login extends javax.swing.JPanel {
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
 
         jPanel1 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
@@ -37,7 +38,7 @@ public class Login extends javax.swing.JPanel {
         usernameFld = new javax.swing.JTextField();
 
         setPreferredSize(new java.awt.Dimension(400, 250));
-        setLayout(null);
+        setLayout(new java.awt.GridBagLayout());
 
         jLabel1.setFont(new java.awt.Font("Tahoma", 1, 48)); // NOI18N
         jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -190,8 +191,14 @@ public class Login extends javax.swing.JPanel {
                 .addGap(19, 19, 19))
         );
 
-        add(jPanel1);
-        jPanel1.setBounds(150, 42, 390, 450);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.ipadx = 9;
+        gridBagConstraints.ipady = 34;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(42, 150, 41, 136);
+        add(jPanel1, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
     private void loginBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loginBtnActionPerformed
         String username = usernameFld.getText();
