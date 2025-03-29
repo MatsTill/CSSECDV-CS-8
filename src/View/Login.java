@@ -22,6 +22,7 @@ public class Login extends javax.swing.JPanel {
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
 
         jPanel1 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
@@ -37,7 +38,7 @@ public class Login extends javax.swing.JPanel {
         usernameFld = new javax.swing.JTextField();
 
         setPreferredSize(new java.awt.Dimension(400, 250));
-        setLayout(null);
+        setLayout(new java.awt.GridBagLayout());
 
         jLabel1.setFont(new java.awt.Font("Tahoma", 1, 48)); // NOI18N
         jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -126,6 +127,11 @@ public class Login extends javax.swing.JPanel {
         passwordFld.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
         passwordFld.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         passwordFld.setBorder(javax.swing.BorderFactory.createTitledBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 2, true), "PASSWORD", javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Tahoma", 0, 12))); // NOI18N
+        passwordFld.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                passwordFldActionPerformed(evt);
+            }
+        });
 
         usernameFld.setBackground(new java.awt.Color(240, 240, 240));
         usernameFld.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
@@ -190,8 +196,13 @@ public class Login extends javax.swing.JPanel {
                 .addGap(19, 19, 19))
         );
 
-        add(jPanel1);
-        jPanel1.setBounds(150, 42, 389, 416);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.ipadx = 9;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(42, 150, 22, 136);
+        add(jPanel1, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
     private void loginBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loginBtnActionPerformed
         String username = usernameFld.getText();
@@ -297,6 +308,10 @@ public class Login extends javax.swing.JPanel {
             }   
         }
     }//GEN-LAST:event_forgotPassActionPerformed
+
+    private void passwordFldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_passwordFldActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_passwordFldActionPerformed
 
 
     //

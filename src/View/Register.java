@@ -16,6 +16,7 @@ public class Register extends javax.swing.JPanel {
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
 
         jLabel2 = new javax.swing.JLabel();
         registerBtn = new javax.swing.JButton();
@@ -32,7 +33,7 @@ public class Register extends javax.swing.JPanel {
         jLabel2.setFont(new java.awt.Font("Tahoma", 0, 13)); // NOI18N
         jLabel2.setText("Show Password");
 
-        setLayout(null);
+        setLayout(new java.awt.GridBagLayout());
 
         registerBtn.setFont(new java.awt.Font("Tahoma", 1, 24)); // NOI18N
         registerBtn.setText("REGISTER");
@@ -41,29 +42,54 @@ public class Register extends javax.swing.JPanel {
                 registerBtnActionPerformed(evt);
             }
         });
-        add(registerBtn);
-        registerBtn.setBounds(278, 383, 220, 52);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 7;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.ipadx = 66;
+        gridBagConstraints.ipady = 17;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(18, 200, 49, 0);
+        add(registerBtn, gridBagConstraints);
 
         passwordFld.setBackground(new java.awt.Color(240, 240, 240));
         passwordFld.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
         passwordFld.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         passwordFld.setBorder(javax.swing.BorderFactory.createTitledBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 2, true), "PASSWORD", javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Tahoma", 0, 12))); // NOI18N
-        add(passwordFld);
-        passwordFld.setBounds(200, 112, 380, 45);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridwidth = 5;
+        gridBagConstraints.ipadx = 316;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(6, 122, 0, 188);
+        add(passwordFld, gridBagConstraints);
 
         usernameFld.setBackground(new java.awt.Color(240, 240, 240));
         usernameFld.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
         usernameFld.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         usernameFld.setBorder(javax.swing.BorderFactory.createTitledBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 2, true), "USERNAME", javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Tahoma", 0, 12))); // NOI18N
-        add(usernameFld);
-        usernameFld.setBounds(200, 61, 380, 45);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridwidth = 5;
+        gridBagConstraints.ipadx = 316;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(34, 122, 0, 188);
+        add(usernameFld, gridBagConstraints);
 
         confpassFld.setBackground(new java.awt.Color(240, 240, 240));
         confpassFld.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
         confpassFld.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         confpassFld.setBorder(javax.swing.BorderFactory.createTitledBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 2, true), "CONFIRM PASSWORD", javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Tahoma", 0, 12))); // NOI18N
-        add(confpassFld);
-        confpassFld.setBounds(200, 163, 380, 45);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridwidth = 5;
+        gridBagConstraints.ipadx = 316;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(6, 122, 0, 188);
+        add(confpassFld, gridBagConstraints);
 
         backBtn.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
         backBtn.setText("<Back");
@@ -72,21 +98,35 @@ public class Register extends javax.swing.JPanel {
                 backBtnActionPerformed(evt);
             }
         });
-        add(backBtn);
-        backBtn.setBounds(6, 6, 72, 21);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(6, 6, 0, 0);
+        add(backBtn, gridBagConstraints);
 
         showConfPassBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 showConfPassBoxActionPerformed(evt);
             }
         });
-        add(showConfPassBox);
-        showConfPassBox.setBounds(453, 214, 19, 19);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridheight = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(6, 375, 0, 0);
+        add(showConfPassBox, gridBagConstraints);
 
         jLabel3.setFont(new java.awt.Font("Tahoma", 0, 13)); // NOI18N
         jLabel3.setText("Show Password");
-        add(jLabel3);
-        jLabel3.setBounds(478, 214, 90, 16);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(6, 6, 0, 0);
+        add(jLabel3, gridBagConstraints);
 
         securityQues2.setBackground(new java.awt.Color(240, 240, 240));
         securityQues2.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
@@ -127,8 +167,14 @@ public class Register extends javax.swing.JPanel {
         securityQues2.getAccessibleContext().setAccessibleName("securityQues2");
         securityQues1.getAccessibleContext().setAccessibleName("SecurityQues1");
 
-        add(jPanel1);
-        jPanel1.setBounds(200, 251, 380, 114);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.gridwidth = 5;
+        gridBagConstraints.ipadx = 304;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(18, 122, 0, 188);
+        add(jPanel1, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
     private void registerBtnActionPerformed(java.awt.event.ActionEvent evt) {

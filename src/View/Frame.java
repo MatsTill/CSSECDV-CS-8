@@ -51,16 +51,7 @@ public class Frame extends javax.swing.JFrame {
         HomePnl.setBackground(new java.awt.Color(102, 102, 102));
         HomePnl.setPreferredSize(new java.awt.Dimension(801, 500));
 
-        javax.swing.GroupLayout ContentLayout = new javax.swing.GroupLayout(Content);
-        Content.setLayout(ContentLayout);
-        ContentLayout.setHorizontalGroup(
-            ContentLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 544, Short.MAX_VALUE)
-        );
-        ContentLayout.setVerticalGroup(
-            ContentLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 0, Short.MAX_VALUE)
-        );
+        Content.setLayout(new java.awt.GridBagLayout());
 
         Navigation.setBackground(new java.awt.Color(204, 204, 204));
 
